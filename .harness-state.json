@@ -1,18 +1,27 @@
 {
   "project": "Finance Report",
   "createdAt": "2026-06-02T00:00:00Z",
-  "updatedAt": "2026-06-02T00:00:00Z",
+  "updatedAt": "2026-06-02T14:00:00Z",
   "humanInTheLoop": false,
-  "currentPhase": "architect",
+  "currentPhase": "scaffold",
+  "currentBranch": "feature/feat-001-mvp",
   "phases": {
     "analysis":   { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T00:00:00Z" },
-    "architect":  { "status": "pending",    "approved": false },
-    "design":     { "status": "pending",    "approved": false },
-    "scaffold":   { "status": "pending",    "approved": false },
+    "architect":  { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T12:01:00Z", "completedAt": "2026-06-02T12:30:00Z" },
+    "design":     { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T12:00:00Z" },
+    "scaffold":   { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T14:00:00Z", "completedAt": "2026-06-02T14:30:00Z" },
     "develop":    { "status": "pending",    "approved": false },
     "test":       { "status": "pending",    "approved": false },
     "quality":    { "status": "pending",    "approved": false },
     "deploy":     { "status": "pending",    "approved": false }
   },
-  "features": []
+  "features": [
+    {
+      "id": "feat-001",
+      "slug": "mvp",
+      "branch": "feature/feat-001-mvp",
+      "status": "in_progress",
+      "description": "MVP — Scaffolding y estructura base del proyecto"
+    }
+  ]
 }
