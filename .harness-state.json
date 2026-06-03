@@ -1,0 +1,18 @@
+{
+  "project": "Finance Report",
+  "createdAt": "2026-06-02T00:00:00Z",
+  "updatedAt": "2026-06-02T00:00:00Z",
+  "humanInTheLoop": false,
+  "currentPhase": "architect",
+  "phases": {
+    "analysis":   { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T00:00:00Z" },
+    "architect":  { "status": "pending",    "approved": false },
+    "design":     { "status": "pending",    "approved": false },
+    "scaffold":   { "status": "pending",    "approved": false },
+    "develop":    { "status": "pending",    "approved": false },
+    "test":       { "status": "pending",    "approved": false },
+    "quality":    { "status": "pending",    "approved": false },
+    "deploy":     { "status": "pending",    "approved": false }
+  },
+  "features": []
+}

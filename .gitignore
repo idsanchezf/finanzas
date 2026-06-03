@@ -1,0 +1,59 @@
+# ============================================================
+# Finance Report — .gitignore
+# ============================================================
+
+# --- Datos sensibles y extractos bancarios ---
+*.xlsx
+*.xls
+*.csv.private
+
+# --- Dependencias ---
+node_modules/
+packages/
+vendor/
+
+# --- Artefactos de compilacion ---
+bin/
+obj/
+out/
+dist/
+build/
+*.dll
+*.exe
+*.pdb
+
+# --- Entorno y configuracion ---
+.env
+.env.*
+*.local
+appsettings.*.json
+!appsettings.json
+*.secret
+
+# --- IDE y editores ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Cobertura y reportes ---
+coverage/
+*.lcov
+*.coverage
+TestResults/
+
+# --- Archivos temporales ---
+tmp/
+temp/
+*.tmp
+*.bak

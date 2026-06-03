@@ -1,0 +1,63 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "leader",
+
+  "instructions": [
+    "AGENTS.md"
+  ],
+
+  "agent": {
+    "leader": {
+      "mode": "primary",
+      "description": "Agente lider que orquesta el ciclo completo de ingenieria de software. Coordina subagentes especializados por fase del SDLC. La tecnologia se elige en la fase de diseno."
+    },
+    "analysis": {
+      "mode": "subagent",
+      "description": "Analisis de requerimientos, reglas de negocio, DDD, event storming y definicion de bounded contexts."
+    },
+    "architect": {
+      "mode": "subagent",
+      "description": "Definicion y mantenimiento de architecture.md con ADR, diagramas C4, stack tecnologico y restricciones transversales."
+    },
+    "design": {
+      "mode": "subagent",
+      "description": "Seleccion de tecnologia con el usuario, diseno de contratos API, modelo de datos, patrones de integracion y topologia de servicios."
+    },
+    "scaffold": {
+      "mode": "subagent",
+      "description": "Scaffolding de solucion, proyectos, estructura de carpetas, configuracion de dependencias, Dockerfiles y docker-compose segun el stack elegido."
+    },
+    "develop": {
+      "mode": "subagent",
+      "description": "Implementacion de funcionalidad: dominio, casos de uso, repositorios, endpoints y logica de negocio siguiendo patrones del stack seleccionado."
+    },
+    "test": {
+      "mode": "subagent",
+      "description": "Pruebas unitarias, integracion, contract testing, carga y cobertura adaptadas al stack tecnologico definido en diseno."
+    },
+    "quality": {
+      "mode": "subagent",
+      "description": "Analisis estatico, revision de codigo, seguridad (OWASP), deuda tecnica y cumplimiento de estandares."
+    },
+    "deploy": {
+      "mode": "subagent",
+      "description": "CI/CD, pipelines, despliegue en Kubernetes/Docker, health checks, observabilidad y configuracion de infraestructura como codigo."
+    },
+    "features": {
+      "mode": "subagent",
+      "description": "Gestion de features, backlog de tareas y archivo de estado del proyecto (una feature a la vez, persistencia entre sesiones)."
+    }
+  },
+
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "git *": "allow",
+      "docker *": "allow",
+      "kubectl *": "ask",
+      "helm *": "ask",
+      "gh *": "allow",
+      "*": "ask"
+    }
+  }
+}
