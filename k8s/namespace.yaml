@@ -1,0 +1,10 @@
+# ============================================================
+# Finance Report — Namespace
+# ============================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: finance-report
+  labels:
+    app: finance-report
+    environment: production

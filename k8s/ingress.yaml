@@ -1,0 +1,32 @@
+# ============================================================
+# Finance Report — Ingress (Oracle OKE Nginx Ingress Controller)
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: finance-ingress
+  namespace: finance-report
+  labels:
+    app: finance-report
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.financereport.app
+      secretName: finance-tls
+  rules:
+    - host: api.financereport.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: finance-backend-svc
+                port:
+                  number: 80

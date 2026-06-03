@@ -1,0 +1,21 @@
+# ============================================================
+# Finance Report — ConfigMap (variables no sensibles)
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finance-config
+  namespace: finance-report
+  labels:
+    app: finance-report
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  GEMINI_MODEL: "gemini-1.5-flash"
+  R2_ENDPOINT: "https://your-account.r2.cloudflarestorage.com"
+  R2_BUCKET_EXTRACTS: "finance-extracts"
+  R2_BUCKET_REPORTS: "finance-reports"
+  R2_BUCKET_MODELS: "finance-models"
+  JWT_ALGORITHM: "HS256"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"

@@ -1,221 +1,204 @@
-# Harness Engineering — Plantilla para Microservicios .NET Core
+# Finance Report
 
-Plantilla de ingenieria de arneses con opencode que orquesta el ciclo de vida completo de microservicios .NET Core mediante agentes especializados.
-
-## Requisitos previos
-
-- [opencode](https://opencode.ai) instalado
-- .NET SDK (ultima version LTS)
-- Docker Desktop (opcional, para contenerizacion)
-- Git
-
-## Inicio rapido
-
-### 1. Clona o copia esta plantilla en tu proyecto
-
-```powershell
-cp -Recurse C:\@idsanchezf\harness-engineering\* .\mi-microservicio\
-cd .\mi-microservicio
-```
-
-### 2. Inicia opencode en el directorio
-
-```powershell
-opencode
-```
-
-El agente lider `leader` se activa automaticamente como agente por defecto. Al iniciar:
-
-- Lee `.harness-state.json` para conocer el estado del proyecto
-- Si el archivo no existe, lo crea e inicia en fase `analysis`
-- Si existe, retoma desde la fase/feature donde se quedo
-
-### 3. Comienza con una solicitud
-
-Escribe en lenguaje natural lo que necesitas:
-
-```
-Crear un microservicio de gestion de pedidos para un e-commerce
-```
-
-El lider evaluara la solicitud y delegara al subagente correspondiente.
-
-## Agentes disponibles
-
-| Agente | Invocacion directa | Fase |
-|--------|-------------------|------|
-| `leader` | default (automatico) | Orquestacion |
-| `features` | Gestion de backlog, ramas y estado | Transversal |
-| `analysis` | DDD, event storming, requerimientos | 1 |
-| `architect` | Definicion de `architecture.md` (ADR, C4) | 2a |
-| `design` | Contratos API, modelo de datos, integracion | 2b |
-| `scaffold` | Creacion de solucion .NET y Docker | 3 |
-| `develop` | Implementacion de funcionalidad | 4 |
-| `test` | Pruebas unitarias, integracion, carga | 5 |
-| `quality` | Analisis estatico, seguridad, deuda tecnica | 6 |
-| `deploy` | CI/CD, Kubernetes, observabilidad | 7 |
-
-### Invocar un subagente directamente
-
-Si necesitas saltar a una fase especifica:
-
-```
-@analysis necesito analizar el dominio de facturacion electronica
-@develop implementa el endpoint de creacion de facturas
-@test genera pruebas de integracion para el modulo de pagos
-```
-
-### Comandos de gestion de features
-
-El agente `features` gestiona el backlog y el archivo `.harness-state.json`:
-
-```
-@features status                    # Ver estado actual del proyecto
-@features list features             # Listar todas las features
-@features start F001                # Inicia feature + crea rama feature/F001-{slug}
-@features complete F001             # Push + crea PR hacia develop (marca in_review)
-@features merge F001                # Tras aprobacion del PR, mergea y marca done
-
-### Comandos de tareas (checklist)
-
-Cada feature tiene su `tasks.json` en `docs/features/{id}-{slug}/tasks.json`.
-
-@features tasks progress F001         # Barra de progreso por capa
-@features task done F001 T003          # Marcar tarea como completada
-@features task start F001 T004         # Iniciar siguiente tarea
-@features block F002 motivo="..."   # Bloquear feature
-@features phase complete develop    # Marcar fase como completada
-@features phase start test          # Iniciar siguiente fase
-```
-
-## Archivo de estado `.harness-state.json`
-
-Persiste el progreso entre sesiones. Si cierras opencode y vuelves a abrirlo, el lider lee este archivo y retoma exactamente donde quedaste.
-
-```json
-{
-  "project": "OrderService",
-  "currentPhase": "develop",
-  "phases": {
-    "analysis":  { "status": "completed" },
-    "architect": { "status": "completed" },
-    "design":    { "status": "completed" },
-    "scaffold":  { "status": "completed" },
-    "develop":   { "status": "in_progress" },
-    "test":      { "status": "pending" },
-    "quality":   { "status": "pending" },
-    "deploy":    { "status": "pending" }
-  },
-  "features": [
-    { "id": "F001", "name": "Crear pedido", "status": "done" },
-    { "id": "F002", "name": "Cancelar pedido", "status": "in_progress" },
-    { "id": "F003", "name": "Consultar estado", "status": "pending" }
-  ]
-}
-```
-
-## Flujo de trabajo tipico
-
-```
-1. "Crear un microservicio de catalogo de productos"
-   └─ leader -> analysis  (DDD, bounded contexts, eventos de dominio)
-
-2. (analysis completa)
-   └─ leader -> architect (docs/architecture.md, ADR, diagramas C4)
-
-3. (architect completa)
-   └─ leader -> design    (contratos REST, modelo ER, patrones integracion)
-
-4. (design completa)
-   └─ leader -> scaffold  (dotnet new, Dockerfile, docker-compose)
-
-5. "Agregar feature: busqueda de productos por categoria"
-   └─ leader -> features  (crea rama feature/F004-busqueda-productos)
-   └─ leader -> develop   (handler MediatR, endpoint, repositorio EF Core, TDD)
-
-6. "Probar la feature F001"
-   └─ leader -> test      (xUnit, WebApplicationFactory, TestContainers)
-
-7. "Revisar calidad del codigo"
-   └─ leader -> quality   (Roslyn analyzers, OWASP, cobertura)
-
-8. "Preparar despliegue en AKS"
-   └─ leader -> deploy    (CI/CD pipeline, Helm charts, health checks)
-```
-
-## Estructura generada por `scaffold`
-
-```
-mi-microservicio/
-├── .harness-state.json
-├── src/
-│   ├── OrderService.Api/
-│   ├── OrderService.Application/
-│   ├── OrderService.Domain/
-│   ├── OrderService.Infrastructure/
-│   └── OrderService.Contracts/
-├── tests/
-│   ├── OrderService.UnitTests/
-│   ├── OrderService.IntegrationTests/
-│   └── OrderService.ContractTests/
-├── docs/
-│   ├── analysis/                           # Artefactos globales del proyecto
-│   │   ├── domain-model.md
-│   │   └── business-rules.md
-│   ├── architecture.md                     # ADRs, C4, stack global
-│   └── features/                           # Una carpeta por feature
-│       ├── F001-registro-usuarios-oauth2/
-│       │   ├── analysis.md
-│       │   ├── api-contract.yaml
-│       │   ├── data-model.md
-│       │   └── tasks.json
-│       └── F002-gestion-ordenes-compra/
-│           ├── analysis.md
-│           ├── api-contract.yaml
-│           ├── data-model.md
-│           └── tasks.json
-├── docker-compose.yml
-├── Dockerfile
-└── OrderService.sln
-```
+Sistema de clasificacion y analisis de gastos personales que procesa extractos bancarios Excel (.xlsx), clasifica transacciones mediante un motor hibrido (reglas + ML), y presenta dashboards con analisis financiero detallado. Incluye asistente financiero con IA, deteccion de malos habitos, y traduccion colaborativa de comercios.
 
 ## Stack tecnologico
 
-| Categoria | Tecnologia |
-|-----------|------------|
-| Runtime | .NET (ultima version LTS) |
-| API | ASP.NET Core Minimal API |
-| ORM | Entity Framework Core (ultima version LTS) |
-| BD | PostgreSQL |
-| Cache | Redis |
-| Mensajeria | MassTransit + RabbitMQ |
-| CQRS | MediatR |
-| Validacion | FluentValidation |
-| Pruebas | xUnit + Moq + TestContainers |
-| CI/CD | GitHub Actions / Azure DevOps |
-| Infra | Docker, Kubernetes, Helm |
-| Observabilidad | OpenTelemetry, Serilog, Prometheus |
+| Capa | Tecnologia | Version |
+|------|-----------|---------|
+| **Backend** | Python + FastAPI | 3.12+ |
+| **Frontend** | TypeScript + Next.js 14 (App Router) | 5.x |
+| **ORM** | SQLAlchemy 2.0 + Alembic | latest |
+| **Base de datos** | PostgreSQL 16 (Supabase) | 16 |
+| **Cache** | Redis 7 (Upstash) | 7 |
+| **Mensajeria** | RabbitMQ | 3.13 |
+| **LLM** | Google Gemini 1.5 Flash | latest |
+| **ML** | scikit-learn + sentence-transformers | latest |
+| **Graficos** | Recharts + Tremor | latest |
+| **Contenedores** | Docker + Docker Compose | latest |
+| **Orquestacion** | Kubernetes (Oracle OKE) | — |
+| **CI/CD** | GitHub Actions | — |
+| **Observabilidad** | OpenTelemetry + Grafana Cloud | — |
 
-## Skills disponibles
+## Requisitos previos
 
-Los skills se activan automaticamente segun el contexto:
+- **Docker Desktop** (con Docker Compose)
+- **Python 3.12+** (para desarrollo local sin Docker)
+- **Node.js 20+** (para desarrollo local del frontend)
+- **Poetry** (gestor de dependencias Python)
 
-| Skill | Se activa cuando |
-|-------|-----------------|
-| `tdd` | Implementacion de nueva funcionalidad (RED-GREEN-REFACTOR) |
-| `bdd` | Definicion de criterios de aceptacion (Gherkin + Reqnroll) |
-| `git-flow` | Gestion de ramas y versionado (feature/*, develop, release/*) |
-| `dotnet-microservice` | Cualquier tarea .NET Core (stack, estructura, patrones) |
+## Como levantar en desarrollo
 
-## Reglas del proceso
+### Con Docker Compose (recomendado)
 
-- **Una feature a la vez**: solo una feature puede estar `in_progress`
-- **Una fase a la vez**: no se avanza a la siguiente fase sin completar la actual
-- **Rama por feature**: `@features start` crea automaticamente `feature/{id}-{slug}` desde `develop`
-- **Git Flow**: `feature/*` -> `develop` -> `release/*` -> `main`
-- **TDD obligatorio**: RED -> GREEN -> REFACTOR en cada tarea de implementacion
-- **BDD para aceptacion**: criterios en Gherkin antes de implementar
-- **architecture.md vivo**: cada decision arquitectonica genera un ADR
-- **Checklist de tareas**: generada por `design`, marcada por `develop` al completar cada tarea
-- **Persistencia automatica**: cada cambio de fase, feature, tarea o TDD se guarda en `.harness-state.json`
-- **Resiliencia entre sesiones**: al reabrir opencode se retoma el estado anterior, incluyendo la tarea y el paso TDD exacto
+```bash
+# 1. Copiar variables de entorno
+cp .env.example .env
+
+# 2. Levantar todos los servicios (10 contenedores)
+docker compose up -d
+
+# 3. Ver logs
+docker compose logs -f backend
+
+# 4. Detener servicios
+docker compose down
+```
+
+Servicios disponibles:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs (Swagger)**: http://localhost:8000/docs
+- **RabbitMQ Management**: http://localhost:15672 (guest/guest)
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+
+### Sin Docker (desarrollo local)
+
+#### Backend
+
+```bash
+cd src/backend
+
+# Instalar dependencias
+poetry install
+
+# Ejecutar migraciones (requiere PostgreSQL corriendo)
+poetry run alembic upgrade head
+
+# Sembrar datos iniciales (categorias predefinidas)
+python scripts/seed_data.py
+
+# Iniciar servidor de desarrollo con hot-reload
+poetry run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Frontend
+
+```bash
+cd src/frontend
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo con hot-reload
+npm run dev
+```
+
+## Estructura del proyecto
+
+```
+finance-report/
+├── .github/workflows/              # CI/CD pipelines
+│   ├── ci.yml                      # Lint + test (backend + frontend)
+│   ├── deploy-backend.yml          # Deploy a Oracle OKE
+│   └── deploy-frontend.yml         # Deploy a Vercel
+├── docs/
+│   ├── architecture.md             # ADRs, diagramas C4, stack, contratos API
+│   ├── analysis/                   # Requerimientos, modelo de dominio
+│   └── features/                   # Features y tareas
+├── k8s/                           # Manifiestos Kubernetes (Oracle OKE)
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secrets.yaml               # Template con placeholders
+│   ├── deployment-backend.yaml
+│   ├── deployment-workers.yaml
+│   ├── service-backend.yaml
+│   ├── ingress.yaml
+│   └── hpa.yaml
+├── src/
+│   ├── backend/                    # FastAPI (Python)
+│   │   ├── pyproject.toml          # Poetry: dependencias, scripts, config
+│   │   ├── Dockerfile              # Multi-stage (dev + prod)
+│   │   ├── alembic.ini             # Migraciones BD
+│   │   ├── alembic/
+│   │   ├── src/
+│   │   │   ├── domain/             # Entidades, value objects, eventos, repositorios
+│   │   │   ├── application/        # CQRS: commands, queries, handlers, DTOs
+│   │   │   ├── infrastructure/     # ORM, RabbitMQ, Redis, R2, Gemini
+│   │   │   ├── api/                # FastAPI routers, middleware, schemas
+│   │   │   └── workers/            # ExtractProc, ClassSvc, NotifSvc
+│   │   ├── tests/
+│   │   └── scripts/
+│   └── frontend/                   # Next.js (TypeScript)
+│       ├── package.json
+│       ├── Dockerfile
+│       ├── src/
+│       │   ├── app/                # App Router (pages + layouts)
+│       │   ├── components/         # Dashboard, transacciones, UI
+│       │   ├── hooks/              # useApi, useAuth
+│       │   ├── lib/                # api client, auth, utils
+│       │   └── types/              # TypeScript interfaces
+│       └── tests/
+├── docker-compose.yml              # 10 contenedores para desarrollo local
+├── .env.example                    # Variables de entorno requeridas
+└── README.md
+```
+
+## Arquitectura (Clean Architecture + DDD)
+
+El backend sigue Clean Architecture con separacion en 4 capas:
+
+```
+api/ (presentacion)
+  ↓ depende de
+application/ (casos de uso CQRS)
+  ↓ depende de
+domain/ (entidades, value objects, eventos)
+  ↑ implementa
+infrastructure/ (ORM, RabbitMQ, Redis, R2, Gemini)
+```
+
+**10 contenedores** definidos en `docker-compose.yml`:
+1. Web App SPA (Next.js)
+2. API Backend (FastAPI)
+3. PostgreSQL
+4. Redis
+5. RabbitMQ
+6. Procesador de Extractos (worker)
+7. Servicio de Clasificacion (worker)
+8. Servicio de IA / Chat (integrado en FastAPI)
+9. Servicio de Notificaciones (worker)
+10. Almacenamiento (MinIO / R2)
+
+## Comandos utiles
+
+### Backend
+
+```bash
+cd src/backend
+
+poetry run pytest                          # Ejecutar tests
+poetry run pytest --cov=src                # Tests con cobertura
+poetry run ruff check src/ tests/          # Lint
+poetry run mypy src/                       # Type check
+poetry run alembic revision --autogenerate -m "descripcion"  # Nueva migracion
+poetry run alembic upgrade head            # Aplicar migraciones
+python scripts/seed_data.py                # Sembrar datos iniciales
+```
+
+### Frontend
+
+```bash
+cd src/frontend
+
+npm run dev              # Servidor de desarrollo
+npm run build            # Build de produccion
+npm run lint             # ESLint
+npm run type-check       # TypeScript check
+npm run test             # Ejecutar tests
+npm run test:coverage    # Tests con cobertura
+```
+
+### Docker
+
+```bash
+docker compose up -d                        # Iniciar todo
+docker compose up backend -d                # Solo backend
+docker compose logs -f backend              # Logs del backend
+docker compose exec backend bash            # Shell en el contenedor
+docker compose down -v                      # Detener y eliminar volumenes
+```
+
+## Licencia
+
+MIT

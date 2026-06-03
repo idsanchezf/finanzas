@@ -1,0 +1,310 @@
+# ============================================================
+# Finance Report — Docker Compose (desarrollo local)
+# ============================================================
+# Uso:
+#   docker compose up -d            # Inicia todos los servicios
+#   docker compose up backend -d    # Solo el backend
+#   docker compose down -v          # Detiene y elimina volumenes
+#   docker compose logs -f backend  # Logs del backend
+# ============================================================
+
+version: "3.9"
+
+services:
+  # =============================================================
+  # 1. Base de datos — PostgreSQL 16
+  # =============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: finance-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_report
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finance_report"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 2. Cache — Redis 7
+  # =============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: finance-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 3. Message Broker — RabbitMQ 3.13
+  # =============================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: finance-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 4. Almacenamiento S3-compatible — MinIO (desarrollo local)
+  # =============================================================
+  minio:
+    image: minio/minio:latest
+    container_name: finance-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # Console UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASS: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 5. Inicializador MinIO — Crea buckets automaticamente
+  # =============================================================
+  minio-init:
+    image: minio/mc:latest
+    container_name: finance-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/finance-extracts;
+      mc mb --ignore-existing local/finance-reports;
+      mc mb --ignore-existing local/finance-models;
+      echo 'Buckets creados exitosamente';
+      exit 0;
+      "
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 6. API Backend — FastAPI
+  # =============================================================
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finance-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finance_report
+      - DATABASE_URL_SYNC=postgresql://postgres:postgres@postgres:5432/finance_report
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_HOST=rabbitmq
+      - R2_ENDPOINT=http://minio:9000
+      - R2_ACCESS_KEY=minioadmin
+      - R2_SECRET_KEY=minioadmin
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    env_file:
+      - .env
+    volumes:
+      - ./src/backend/src:/app/src
+      - ./src/backend/tests:/app/tests
+      - ./src/backend/alembic:/app/alembic
+      - ./src/backend/alembic.ini:/app/alembic.ini
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 7. Frontend — Next.js dev server
+  # =============================================================
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finance-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+    volumes:
+      - ./src/frontend/src:/app/src
+      - ./src/frontend/public:/app/public
+      - ./src/frontend/tests:/app/tests
+    depends_on:
+      - backend
+    command: npm run dev
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 8. Worker — Procesador de Extractos
+  # =============================================================
+  extract-processor:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finance-extract-proc
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finance_report
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - R2_ENDPOINT=http://minio:9000
+      - R2_ACCESS_KEY=minioadmin
+      - R2_SECRET_KEY=minioadmin
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    env_file:
+      - .env
+    volumes:
+      - ./src/backend/src:/app/src
+      - ./src/backend/tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    command: python -m src.workers.extract_processor
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 9. Worker — Servicio de Clasificacion
+  # =============================================================
+  classification-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finance-class-svc
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finance_report
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - R2_ENDPOINT=http://minio:9000
+      - R2_ACCESS_KEY=minioadmin
+      - R2_SECRET_KEY=minioadmin
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    env_file:
+      - .env
+    volumes:
+      - ./src/backend/src:/app/src
+      - ./src/backend/tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python -m src.workers.classification_worker
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 10. Worker — Servicio de Notificaciones
+  # =============================================================
+  notification-worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finance-notif-svc
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/finance_report
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    env_file:
+      - .env
+    volumes:
+      - ./src/backend/src:/app/src
+      - ./src/backend/tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python -m src.workers.notification_worker
+    networks:
+      - finance-network
+
+# =============================================================
+# Volumenes persistentes
+# =============================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# =============================================================
+# Redes
+# =============================================================
+networks:
+  finance-network:
+    driver: bridge
+    name: finance-network
