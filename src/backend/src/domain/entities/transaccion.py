@@ -7,7 +7,7 @@ Soporta cuotas, moneda extranjera, clasificacion y nivel de confianza.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -38,7 +38,7 @@ class Transaccion:
     es_abono: bool = False
     es_cuota: bool = False
     parent_transaccion_id: UUID | None = None  # Para sub-filas VR MONEDA ORIG
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __post_init__(self) -> None:
         """Deriva flags de abono y cuotas a partir de los datos."""

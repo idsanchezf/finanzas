@@ -12,7 +12,8 @@ WORKDIR /app
 FROM base AS development
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+# npm install para dev (no requiere lock file si no existe aun)
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
@@ -24,7 +25,8 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+# npm ci para build reproducible; fallback a npm install si no hay lock
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1

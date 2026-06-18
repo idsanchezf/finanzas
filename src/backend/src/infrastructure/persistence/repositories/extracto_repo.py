@@ -59,13 +59,17 @@ class ExtractoRepository(IExtractoRepository):
         return result.scalar_one_or_none()
 
     async def save(self, extracto: Any) -> Any:
-        """Persiste un extracto (crea o actualiza)."""
+        """Persiste un extracto (crea o actualiza).
+
+        Si es un modelo ORM ya gestionado por SQLAlchemy, usa merge directo.
+        Si es una entidad de dominio, la convierte a modelo y usa merge
+        para soportar tanto insercion como actualizacion.
+        """
         if hasattr(extracto, "_sa_instance_state"):
             await self.session.merge(extracto)
         else:
-            # Convertir entidad de dominio a modelo ORM si es necesario
             modelo = self._to_model(extracto)
-            self.session.add(modelo)
+            modelo = await self.session.merge(modelo)
             extracto = modelo
         await self.session.flush()
         return extracto
@@ -77,7 +81,12 @@ class ExtractoRepository(IExtractoRepository):
             await self.session.flush()
 
     def _to_model(self, entity: Any) -> ExtractoModel:
-        """Convierte entidad de dominio a modelo ORM."""
+        """Convierte entidad de dominio a modelo ORM.
+
+        Maneja la conversion de Value Objects Money a Decimal para los campos monetarios.
+        """
+        _amount = lambda v: v.amount if hasattr(v, "amount") else v
+
         return ExtractoModel(
             id=entity.id,
             tarjeta_id=entity.tarjeta_id,
@@ -87,10 +96,10 @@ class ExtractoRepository(IExtractoRepository):
             periodo_fin=entity.periodo_fin,
             fecha_corte=entity.fecha_corte,
             fecha_limite_pago=entity.fecha_limite_pago,
-            pago_minimo=entity.pago_minimo,
-            pago_total=entity.pago_total,
-            cupo_total=entity.cupo_total,
-            cupo_disponible=entity.cupo_disponible,
+            pago_minimo=_amount(entity.pago_minimo),
+            pago_total=_amount(entity.pago_total),
+            cupo_total=_amount(entity.cupo_total),
+            cupo_disponible=_amount(entity.cupo_disponible),
             archivo_s3_key=entity.archivo_s3_key,
             progress_pct=entity.progress_pct,
             error_message=entity.error_message,

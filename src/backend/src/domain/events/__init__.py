@@ -25,27 +25,39 @@ class DomainEvent:
 
 
 @dataclass(frozen=True)
-class ExtractoCargado(DomainEvent):
+class ExtractoCargado:
     """Se publica cuando un usuario sube un archivo Excel y se registra el extracto."""
 
     extracto_id: UUID
     usuario_id: UUID
     tarjeta_id: UUID
     s3_key: str = ""
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class ExtractoProcesado(DomainEvent):
+class ExtractoProcesado:
     """Se publica cuando el Procesador de Extractos termina de parsear el Excel."""
 
     extracto_id: UUID
     usuario_id: UUID
     tarjeta_id: UUID
     transaction_count: int = 0
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class TransaccionClasificada(DomainEvent):
+class TransaccionClasificada:
     """Se publica cuando una transaccion es clasificada (automatica o manualmente)."""
 
     transaction_id: UUID
@@ -53,23 +65,35 @@ class TransaccionClasificada(DomainEvent):
     categoria_id: UUID
     categoria_anterior: UUID | None = None
     confidence: Decimal = field(default_factory=lambda: Decimal("0"))
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class CategoriaCorregida(DomainEvent):
+class CategoriaCorregida:
     """Se publica cuando el usuario corrige manualmente la categoria de una transaccion.
 
     Este evento dispara el aprendizaje del modelo ML.
     """
 
     transaction_id: UUID
-    categoria_anterior: UUID | None = None
     categoria_nueva: UUID
+    categoria_anterior: UUID | None = None
     comercio_original: str = ""
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class PresupuestoAlcanzado(DomainEvent):
+class PresupuestoAlcanzado:
     """Se publica cuando el gasto de una categoria alcanza el 80% o 100% del presupuesto."""
 
     usuario_id: UUID
@@ -77,10 +101,16 @@ class PresupuestoAlcanzado(DomainEvent):
     categoria_id: UUID
     porcentaje: Decimal = field(default_factory=lambda: Decimal("0"))
     umbral: str = "80"  # "80" o "100"
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class HabitoDetectado(DomainEvent):
+class HabitoDetectado:
     """Se publica cuando el sistema detecta un mal habito financiero."""
 
     usuario_id: UUID
@@ -88,16 +118,28 @@ class HabitoDetectado(DomainEvent):
     titulo: str = ""
     mensaje: str = ""
     severidad: str = "medium"  # "low", "medium", "high", "critical"
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 @dataclass(frozen=True)
-class RecordatorioPendiente(DomainEvent):
+class RecordatorioPendiente:
     """Se publica cuando hay un recordatorio programado para el usuario."""
 
     usuario_id: UUID
     tipo_recordatorio: str = ""  # "pago", "corte", "presupuesto"
     tarjeta_id: UUID | None = None
     fecha_limite: datetime | None = None
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
 
 
 __all__ = [

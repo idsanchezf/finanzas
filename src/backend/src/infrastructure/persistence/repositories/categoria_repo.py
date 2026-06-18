@@ -63,3 +63,25 @@ class CategoriaRepository(ICategoriaRepository):
         if categoria and not categoria.es_predefinida:
             await self.session.delete(categoria)
             await self.session.flush()
+
+    async def buscar_por_nombre(
+        self, nombre: str, usuario_id: uuid.UUID | None = None
+    ) -> list[CategoriaModel]:
+        """Busca categorias por coincidencia parcial en el nombre.
+
+        Busca entre predefinidas y personalizadas del usuario.
+        """
+        conditions = [CategoriaModel.nombre.ilike(f"%{nombre}%")]
+        if usuario_id is not None:
+            conditions.append(
+                or_(
+                    CategoriaModel.es_predefinida == True,
+                    CategoriaModel.usuario_id == usuario_id,
+                )
+            )
+        else:
+            conditions.append(CategoriaModel.es_predefinida == True)
+
+        stmt = select(CategoriaModel).where(*conditions)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

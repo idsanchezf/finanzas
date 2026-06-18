@@ -16,7 +16,14 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/types/**', '**/*.d.ts'],
     },
-    css: false,
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped',
+      },
+    },
+    deps: {
+      inline: [/tailwindcss/],
+    },
   },
   resolve: {
     alias: {

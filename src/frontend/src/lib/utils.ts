@@ -1,13 +1,27 @@
 /** Utilidades compartidas del frontend. */
 
-/** Formatea un numero como moneda COP. */
+/** Formatea un numero como moneda COP con apostrofe como separador de miles ($ 1'234.567). */
 export function formatCOP(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  const withDots = new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+  // Reemplaza el punto separador de miles por apostrofe: $ 1.234.567 -> $ 1'234.567
+  return withDots.replace(/\.(\d{3})/g, "'$1");
+}
+
+/** Formatea un numero compacto estilo colombiano (ej. 1.2M, 350k). */
+export function formatCOPCompact(amount: number): string {
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1)}M`;
+  }
+  if (amount >= 1_000) {
+    const kValue = (amount / 1_000).toFixed(0);
+    return `$${kValue.replace(/\./g, "'")}k`;
+  }
+  return `$${amount.toLocaleString('es-CO')}`;
 }
 
 /** Formatea un numero como porcentaje. */
@@ -55,4 +69,43 @@ export function debounce<T extends (...args: unknown[]) => void>(
 /** Clase para construir nombres de clase condicionales. */
 export function cn(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
+}
+
+/** Determina el nivel de confianza basado en el valor numerico. */
+export function getConfidenceLevel(confidence: number | null | undefined): 'alta' | 'media' | 'baja' | 'sin_clasificar' {
+  if (confidence === null || confidence === undefined) return 'sin_clasificar';
+  if (confidence >= 0.8) return 'alta';
+  if (confidence >= 0.5) return 'media';
+  return 'baja';
+}
+
+/** Formatea el nivel de confianza para mostrar. */
+export function formatConfidence(confidence: number | null | undefined): string {
+  if (confidence === null || confidence === undefined) return 'Sin clasificar';
+  return `${Math.round(confidence * 100)}%`;
+}
+
+/** Obtiene el color CSS para una categoria desde su valor hexadecimal. */
+export function getCategoryColor(color: string, opacity?: number): string {
+  if (opacity !== undefined) {
+    // Convert hex to rgba
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  return color;
+}
+
+/** Formatea numero de cuotas para display (ej. "3/12"). */
+export function formatInstallments(actual: number | null | undefined, total: number | null | undefined): string | null {
+  if (!actual && !total) return null;
+  const a = actual ?? '?';
+  const t = total ?? '?';
+  return `${a}/${t}`;
+}
+
+/** Verifica si un valor es negativo (abono). */
+export function isCredit(amount: number): boolean {
+  return amount < 0;
 }

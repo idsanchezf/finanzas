@@ -15,8 +15,16 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import aio_pika
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from src.infrastructure.messaging.rabbitmq import EXCHANGE_NAME
+from src.infrastructure.persistence.unit_of_work import UnitOfWork
+from src.infrastructure.persistence.repositories.extracto_repo import ExtractoRepository
+from src.infrastructure.persistence.repositories.transaccion_repo import TransaccionRepository
+from src.workers.extract_processor_service import (
+    ExtractMessage,
+    ExtractProcessorService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +77,8 @@ class BaseConsumer(ABC):
                 event_name = message.headers.get("event_name", "Unknown")
 
                 logger.debug(
-                    f"Mensaje recibido en {self.queue_name}",
-                    event_name=event_name,
-                    message_id=message.message_id,
+                    "Mensaje recibido en %s: event=%s msg_id=%s",
+                    self.queue_name, event_name, message.message_id,
                 )
 
                 await self.process_message(body, message.headers)
@@ -105,59 +112,178 @@ class BaseConsumer(ABC):
 
 
 class ExtractProcessorConsumer(BaseConsumer):
-    """Consumidor de la cola extractos.procesar.
+    """Consumidor de la cola extractos.procesar (extract.uploaded).
 
     Procesa archivos Excel cargados por el usuario.
+
+    Flujo completo:
+    1. Recibe mensaje con tracking_id, file_key, card_id, user_id
+    2. Descarga el archivo desde R2/S3 (o usa file_content inline)
+    3. Parsea con ExtractoExcelParser
+    4. Persiste transacciones y actualiza metadatos del extracto
+    5. Publica evento ExtractoProcesado → transactions.new
+    6. En caso de error: marca extracto como ERROR
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(
+        self,
+        url: str,
+        session_factory: async_sessionmaker[AsyncSession] | None = None,
+        storage: Any = None,
+        event_bus: Any = None,
+    ) -> None:
         super().__init__(url, queue_name="extractos.procesar", prefetch_count=5)
+        self.session_factory = session_factory
+        self.storage = storage
+        self.event_bus = event_bus
 
     async def process_message(self, body: dict[str, Any], headers: dict[str, Any]) -> None:
-        """Procesa un evento ExtractoCargado."""
-        extracto_id = body.get("extracto_id")
-        usuario_id = body.get("usuario_id")
-        s3_key = body.get("s3_key")
+        """Procesa un evento de extracto cargado.
+
+        El mensaje puede venir con los campos:
+        - tracking_id / extracto_id: ID del extracto en BD
+        - file_key / s3_key: Key en R2 para descargar el Excel
+        - card_id / tarjeta_id: ID de la tarjeta
+        - user_id / usuario_id: ID del usuario
+        - file_content_b64: Contenido base64 del archivo (inline, sin R2)
+        """
+        msg = ExtractMessage.from_dict(body)
 
         logger.info(
-            "Procesando extracto",
-            extracto_id=extracto_id,
-            usuario_id=usuario_id,
-            s3_key=s3_key,
+            "Procesando extracto via RabbitMQ",
+            extracto_id=str(msg.tracking_id),
+            usuario_id=str(msg.user_id) if msg.user_id else None,
+            file_key=msg.file_key,
+            has_inline_content=bool(msg.file_content_b64),
         )
 
-        # TODO: Implementar logica de parseo en src/workers/extract_processor.py
-        # 1. Descargar archivo Excel desde R2/S3
-        # 2. Parsear usando openpyxl/pandas
-        # 3. Extraer transacciones y metadatos
-        # 4. Persistir en BD
-        # 5. Publicar evento ExtractoProcesado
+        # Si no hay session_factory, modo sin BD (testing/debug)
+        if self.session_factory is None:
+            logger.warning(
+                "Session factory no configurada — procesamiento sin persistencia",
+                extracto_id=str(msg.tracking_id),
+            )
+            return
 
-        await asyncio.sleep(0.1)  # Placeholder
+        # Procesar con UnitOfWork (transaccion atomica)
+        async with UnitOfWork(self.session_factory) as uow:
+            extracto_repo = ExtractoRepository(uow.session)
+            transaccion_repo = TransaccionRepository(uow.session)
+
+            service = ExtractProcessorService(
+                extracto_repo=extracto_repo,
+                transaccion_repo=transaccion_repo,
+                storage=self.storage,
+                event_bus=self.event_bus,
+            )
+
+            result = await service.process(msg)
+
+            if result.success:
+                await uow.commit()
+                logger.info(
+                    "Extracto procesado exitosamente",
+                    extracto_id=str(result.extracto_id),
+                    transacciones=result.transaction_count,
+                )
+            else:
+                # El servicio ya marco el extracto como ERROR.
+                # Hacemos commit igual para persistir el estado ERROR.
+                await uow.commit()
+                logger.error(
+                    "Extracto procesado con errores",
+                    extracto_id=str(result.extracto_id),
+                    errores=result.parse_errors,
+                )
 
 
 class ClassificationConsumer(BaseConsumer):
     """Consumidor de la cola extractos.clasificar.
 
     Clasifica transacciones usando el motor hibrido (reglas + ML).
+    Delega la logica de clasificacion a ClassificationService.
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, service: Any | None = None) -> None:
         super().__init__(url, queue_name="extractos.clasificar", prefetch_count=10)
+        self._service = service
 
     async def process_message(self, body: dict[str, Any], headers: dict[str, Any]) -> None:
-        """Procesa un evento ExtractoProcesado."""
-        extracto_id = body.get("extracto_id")
-        transaction_count = body.get("transaction_count", 0)
+        """Procesa un evento ExtractoProcesado o TransaccionClasificada.
+
+        Espera mensajes con formato:
+        {
+            "extract_id": "...",
+            "transaction_ids": [...],
+            "user_id": "..."
+        }
+        """
+        extract_id = body.get("extract_id")
+        transaction_ids = body.get("transaction_ids", [])
+        user_id = body.get("user_id")
+
+        # Validar payload
+        if not extract_id or not user_id:
+            logger.error(
+                "Mensaje invalido: faltan extract_id o user_id. body=%s",
+                str(body),
+            )
+            return
+
+        # Convertir string IDs a UUID
+        from uuid import UUID
+
+        try:
+            extract_uuid = UUID(extract_id) if isinstance(extract_id, str) else extract_id
+            user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
+            txn_ids = [
+                UUID(tid) if isinstance(tid, str) else tid
+                for tid in transaction_ids
+            ]
+        except (ValueError, TypeError) as e:
+            logger.error(
+                "IDs invalidos en el mensaje: error=%s extract_id=%s user_id=%s",
+                str(e), str(extract_id), str(user_id),
+            )
+            return
+
+        transaction_count = len(txn_ids)
 
         logger.info(
-            "Clasificando transacciones",
-            extracto_id=extracto_id,
-            count=transaction_count,
+            "Clasificando transacciones: extract_id=%s count=%d user_id=%s",
+            str(extract_uuid), transaction_count, str(user_uuid),
         )
 
-        # TODO: Implementar logica de clasificacion en src/workers/classification_worker.py
-        await asyncio.sleep(0.1)  # Placeholder
+        if self._service is None:
+            # Lazy import e inicializacion si no se inyecto
+            from src.workers.classification_service import ClassificationService
+            from src.infrastructure.persistence.unit_of_work import create_session_factory
+            import os
+
+            database_url = os.getenv(
+                "DATABASE_URL",
+                "postgresql+asyncpg://postgres:postgres@localhost:5432/finance_report",
+            )
+            session_factory = await create_session_factory(database_url)
+            self._service = ClassificationService(session_factory=session_factory)
+
+        results = await self._service.process_extract(
+            extract_id=extract_uuid,
+            transaction_ids=txn_ids,
+            user_id=user_uuid,
+        )
+
+        # Log de resultados
+        classified = sum(1 for r in results if r["category_id"] is not None)
+        low_confidence = sum(
+            1 for r in results
+            if r["category_id"] is not None and r["confidence"] < 70
+        )
+
+        logger.info(
+            "Clasificacion completada via RabbitMQ: extract_id=%s total=%d classified=%d low_confidence=%d",
+            str(extract_uuid), transaction_count, classified, low_confidence,
+        )
 
 
 class NotificationConsumer(BaseConsumer):

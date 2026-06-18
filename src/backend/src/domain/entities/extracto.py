@@ -7,7 +7,7 @@ Contiene metadatos del periodo de facturacion y el estado de procesamiento.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -17,6 +17,7 @@ from src.domain.events import (
     ExtractoCargado,
     ExtractoProcesado,
 )
+from src.domain.value_objects.money import Money
 
 
 class EstadoExtracto(str, Enum):
@@ -39,19 +40,28 @@ class Extracto:
     periodo_fin: date | None = None
     fecha_corte: date | None = None
     fecha_limite_pago: date | None = None
-    pago_minimo: Decimal = field(default_factory=lambda: Decimal("0.00"))
-    pago_total: Decimal = field(default_factory=lambda: Decimal("0.00"))
-    cupo_total: Decimal = field(default_factory=lambda: Decimal("0.00"))
-    cupo_disponible: Decimal = field(default_factory=lambda: Decimal("0.00"))
+    pago_minimo: Money = field(default_factory=lambda: Money.zero("COP"))
+    pago_total: Money = field(default_factory=lambda: Money.zero("COP"))
+    cupo_total: Money = field(default_factory=lambda: Money.zero("COP"))
+    cupo_disponible: Money = field(default_factory=lambda: Money.zero("COP"))
     tasas_interes: dict[str, Any] = field(default_factory=dict)
     metadatos: dict[str, Any] = field(default_factory=dict)
     archivo_s3_key: str | None = None
     error_message: str | None = None
     progress_pct: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Transacciones asociadas (lazy loaded por el repositorio)
     transacciones: list[Any] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Valida invariantes de negocio: periodo_inicio < periodo_fin."""
+        if self.periodo_inicio is not None and self.periodo_fin is not None:
+            if self.periodo_inicio > self.periodo_fin:
+                raise ValueError(
+                    f"periodo_inicio ({self.periodo_inicio}) debe ser anterior a "
+                    f"periodo_fin ({self.periodo_fin})"
+                )
 
     def iniciar_procesamiento(self) -> list[Any]:
         """Marca el extracto como en procesamiento y publica evento."""
@@ -92,17 +102,35 @@ class Extracto:
         self.estado = EstadoExtracto.ERROR
         self.error_message = mensaje
 
+    # ============================================================
+    # Propiedades calculadas
+    # ============================================================
+
     @property
     def porcentaje_cupo_utilizado(self) -> Decimal:
-        """Porcentaje del cupo de credito utilizado."""
-        if self.cupo_total and self.cupo_total > 0:
-            return (self.pago_total / self.cupo_total) * 100
+        """Porcentaje del cupo de credito utilizado: (pago_total / cupo_total) * 100."""
+        if self.cupo_total is not None and not self.cupo_total.is_zero:
+            return (self.pago_total.amount / self.cupo_total.amount) * 100
         return Decimal("0")
 
     @property
     def dias_para_pago(self) -> int:
-        """Dias restantes hasta la fecha limite de pago."""
+        """Dias restantes hasta la fecha limite de pago (desde hoy)."""
         if self.fecha_limite_pago:
             delta = self.fecha_limite_pago - date.today()
             return max(0, delta.days)
         return 0
+
+    @property
+    def dias_entre_corte_y_pago(self) -> int | None:
+        """Dias entre fecha_corte y fecha_limite_pago (due_date - cutoff_date)."""
+        if self.fecha_corte is not None and self.fecha_limite_pago is not None:
+            return (self.fecha_limite_pago - self.fecha_corte).days
+        return None
+
+    @property
+    def duracion_periodo(self) -> int | None:
+        """Duracion en dias del periodo de facturacion."""
+        if self.periodo_inicio is not None and self.periodo_fin is not None:
+            return (self.periodo_fin - self.periodo_inicio).days
+        return None

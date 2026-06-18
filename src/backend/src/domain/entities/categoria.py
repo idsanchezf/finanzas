@@ -7,7 +7,7 @@ Contiene palabras clave para el motor de reglas deterministicas.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 
@@ -23,7 +23,7 @@ class Categoria:
     es_predefinida: bool = False
     usuario_id: UUID | None = None
     palabras_clave: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def es_subcategoria(self) -> bool:
@@ -66,7 +66,8 @@ class Categoria:
             cls(nombre="Salud", icono="🏥", color="#96CEB4", es_predefinida=True,
                 palabras_clave=["eps", "medico", "hospital", "farmacia", "medicina",
                                "drogueria", "droga", "medicamento", "consulta", "odontologia",
-                               "laboratorio", "examen", "cirugia", "seguro salud"]),
+                               "laboratorio", "examen", "cirugia", "seguro salud",
+                               "sanitas", "cruz verde", "eps sanitas"]),
             cls(nombre="Entretenimiento", icono="🎮", color="#FFEAA7", es_predefinida=True,
                 palabras_clave=["cine", "teatro", "concierto", "netflix", "spotify",
                                "disney", "hbo", "prime video", "youtube", "videojuego",

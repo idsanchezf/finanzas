@@ -20,6 +20,72 @@ from src.application.queries.obtener_transacciones import ObtenerTransaccionesQu
 router = APIRouter()
 
 
+# ============================================================
+# Rutas fijas (antes de las rutas con parametros de path)
+# ============================================================
+
+@router.get("/search")
+async def search_transactions(
+    q: str = Query(..., min_length=2),
+    extract_id: str | None = Query(None),
+    user_id: str = Depends(get_current_user_id),
+    transaccion_repo: Any = Depends(get_transaccion_repo),
+):
+    """Busqueda full-text por nombre de comercio."""
+    items = await transaccion_repo.search_comercio(uuid.UUID(user_id), q)
+    return {
+        "items": [
+            {"id": str(t.id), "comercio": t.comercio_original, "valor": float(t.valor)}
+            for t in items
+        ]
+    }
+
+
+@router.get("/unclassified/list")
+async def get_unclassified(
+    extract_id: str = Query(...),
+    transaccion_repo: Any = Depends(get_transaccion_repo),
+):
+    """Transacciones con confianza baja (<70%) pendientes de confirmacion."""
+    items = await transaccion_repo.get_unclassified(uuid.UUID(extract_id))
+    return {
+        "items": [
+            {"id": str(t.id), "comercio": t.comercio_original, "valor": float(abs(t.valor))}
+            for t in items
+        ],
+        "count": len(items),
+    }
+
+
+@router.patch("/bulk/category")
+async def bulk_update_category(
+    body: dict = Body(...),
+    user_id: str = Depends(get_current_user_id),
+    command_handler: Any = Depends(get_command_handler),
+):
+    """Clasificacion masiva — asigna la misma categoria a multiples transacciones."""
+    transaction_ids = body.get("transaction_ids", [])
+    categoria_id = body.get("category_id")
+
+    if not transaction_ids or not categoria_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="transaction_ids y category_id son requeridos",
+        )
+
+    cmd = ClasificarTransaccionesMasivasCommand(
+        usuario_id=uuid.UUID(user_id),
+        transaccion_ids=[uuid.UUID(tid) for tid in transaction_ids],
+        categoria_id=uuid.UUID(categoria_id),
+    )
+
+    return await command_handler.handle_clasificacion_masiva(cmd)
+
+
+# ============================================================
+# Rutas principales
+# ============================================================
+
 @router.get("")
 async def list_transactions(
     extract_id: str | None = Query(None),
@@ -98,61 +164,3 @@ async def update_transaction_category(
         return await command_handler.handle_corregir_categoria(cmd)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-
-@router.patch("/bulk/category")
-async def bulk_update_category(
-    body: dict = Body(...),
-    user_id: str = Depends(get_current_user_id),
-    command_handler: Any = Depends(get_command_handler),
-):
-    """Clasificacion masiva — asigna la misma categoria a multiples transacciones."""
-    transaction_ids = body.get("transaction_ids", [])
-    categoria_id = body.get("category_id")
-
-    if not transaction_ids or not categoria_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="transaction_ids y category_id son requeridos",
-        )
-
-    cmd = ClasificarTransaccionesMasivasCommand(
-        usuario_id=uuid.UUID(user_id),
-        transaccion_ids=[uuid.UUID(tid) for tid in transaction_ids],
-        categoria_id=uuid.UUID(categoria_id),
-    )
-
-    return await command_handler.handle_clasificacion_masiva(cmd)
-
-
-@router.get("/unclassified/list")
-async def get_unclassified(
-    extract_id: str = Query(...),
-    transaccion_repo: Any = Depends(get_transaccion_repo),
-):
-    """Transacciones con confianza baja (<70%) pendientes de confirmacion."""
-    items = await transaccion_repo.get_unclassified(uuid.UUID(extract_id))
-    return {
-        "items": [
-            {"id": str(t.id), "comercio": t.comercio_original, "valor": float(abs(t.valor))}
-            for t in items
-        ],
-        "count": len(items),
-    }
-
-
-@router.get("/search")
-async def search_transactions(
-    q: str = Query(..., min_length=2),
-    extract_id: str | None = Query(None),
-    user_id: str = Depends(get_current_user_id),
-    transaccion_repo: Any = Depends(get_transaccion_repo),
-):
-    """Busqueda full-text por nombre de comercio."""
-    items = await transaccion_repo.search_comercio(uuid.UUID(user_id), q)
-    return {
-        "items": [
-            {"id": str(t.id), "comercio": t.comercio_original, "valor": float(t.valor)}
-            for t in items
-        ]
-    }

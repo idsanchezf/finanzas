@@ -1,9 +1,19 @@
 # ============================================================
 # Finance Report — CI Pipeline
-# Ejecuta lint + test en cada push y pull request
+# Ejecuta lint, test y build de imagenes Docker en cada push y PR.
+# ============================================================
+# Dispara en:
+#   - push a develop, feature/*
+#   - pull request a develop, main
+#
+# Jobs:
+#   1. backend-lint      — ruff + black + mypy
+#   2. backend-test      — unit tests + integration tests (SQLite)
+#   3. frontend-test     — eslint + type-check + vitest
+#   4. build-docker      — build imagenes Docker (solo PR a develop/main)
 # ============================================================
 
-name: CI — Lint & Test
+name: CI — Lint & Test & Build
 
 on:
   push:
@@ -15,85 +25,97 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
 jobs:
   # ============================================================
-  # Backend — Python (FastAPI)
+  # 1. Backend — Lint & Format
   # ============================================================
-  backend-test:
-    name: Backend — Lint & Test
+  backend-lint:
+    name: "Backend — Lint & Format"
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: src/backend
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: finance_report_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: pip install poetry
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
 
       - name: Lint with ruff
         run: poetry run ruff check src/ tests/
 
+      - name: Format check with black
+        run: poetry run black --check src/ tests/
+
       - name: Type check with mypy
         run: poetry run mypy src/ --ignore-missing-imports
 
-      - name: Run tests
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/finance_report_test
-          DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/finance_report_test
-          REDIS_URL: redis://localhost:6379/1
-          ENVIRONMENT: test
-          JWT_SECRET: test-secret
-        run: poetry run pytest --cov=src --cov-report=xml --cov-report=term -v
+  # ============================================================
+  # 2. Backend — Unit & Integration Tests
+  # ============================================================
+  backend-test:
+    name: "Backend — Tests"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/backend
 
-      - name: Upload coverage
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Run unit tests
+        run: >
+          poetry run pytest tests/unit/
+          --cov=src
+          --cov-report=xml:coverage/unit-coverage.xml
+          --cov-report=term-missing
+          -v
+
+      - name: Run integration tests (SQLite in-memory)
+        run: >
+          poetry run pytest tests/integration/
+          --cov=src
+          --cov-append
+          --cov-report=xml:coverage/integration-coverage.xml
+          --cov-report=term-missing
+          -v
+
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: backend-coverage
           path: src/backend/coverage/
 
-
   # ============================================================
-  # Frontend — TypeScript (Next.js)
+  # 3. Frontend — Lint, Type Check & Test
   # ============================================================
   frontend-test:
-    name: Frontend — Lint & Test
+    name: "Frontend — Lint & Test"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -102,15 +124,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
+          # Cache se activa automaticamente cuando package-lock.json este commiteado.
+          # Mientras tanto, npm install funciona sin cache.
           cache: 'npm'
           cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # TODO: Cambiar a 'npm ci' cuando package-lock.json este commiteado
+        run: npm install
 
       - name: Lint
         run: npm run lint
@@ -118,11 +143,49 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-      - name: Run tests
-        run: npm run test -- --coverage
+      - name: Run tests with coverage
+        run: npm run test:coverage
 
-      - name: Upload coverage
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: frontend-coverage
           path: src/frontend/coverage/
+
+  # ============================================================
+  # 4. Build Docker Images — Solo en PR a develop/main
+  # ============================================================
+  build-docker:
+    name: "Docker — Build Images"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')
+    needs: [backend-test, frontend-test]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image (production)
+        uses: docker/build-push-action@v5
+        with:
+          context: src/backend
+          file: src/backend/Dockerfile
+          target: production
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image (production)
+        uses: docker/build-push-action@v5
+        with:
+          context: src/frontend
+          file: src/frontend/Dockerfile
+          target: production
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

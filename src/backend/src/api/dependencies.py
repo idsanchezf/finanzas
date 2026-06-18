@@ -7,15 +7,13 @@ y clientes de infraestructura a los endpoints.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.handlers.command_handlers import CommandHandler
 from src.application.handlers.query_handlers import QueryHandler
-from src.infrastructure.cache.redis_client import get_redis_client, RedisClient
-from src.infrastructure.llm.gemini_client import get_gemini_client, GeminiClient
-from src.infrastructure.messaging.rabbitmq import get_event_bus, RabbitMQEventBus
 from src.infrastructure.persistence.repositories import (
     CategoriaRepository,
     ExtractoRepository,
@@ -24,7 +22,6 @@ from src.infrastructure.persistence.repositories import (
     UsuarioRepository,
 )
 from src.infrastructure.persistence.unit_of_work import create_session_factory
-from src.infrastructure.storage.r2_storage import get_storage, R2Storage
 
 
 # ============================================================
@@ -100,17 +97,13 @@ async def get_command_handler(
     transaccion_repo: TransaccionRepository = Depends(get_transaccion_repo),
     categoria_repo: CategoriaRepository = Depends(get_categoria_repo),
     usuario_repo: UsuarioRepository = Depends(get_usuario_repo),
-    evento_bus: RabbitMQEventBus | None = None,
+    evento_bus: Any = None,
 ) -> CommandHandler:
-    from src.application.handlers.command_handlers import CommandHandler
-    from src.infrastructure.persistence.repositories import PresupuestoRepository
-
-    # PresupuestoRepository se puede crear aqui si es necesario
     return CommandHandler(
         extracto_repo=extracto_repo,
         transaccion_repo=transaccion_repo,
         categoria_repo=categoria_repo,
-        presupuesto_repo=None,  # Se inyectara cuando se necesite
+        presupuesto_repo=None,  # Implementacion pendiente
         usuario_repo=usuario_repo,
         event_bus=evento_bus,
     )
@@ -131,20 +124,67 @@ async def get_query_handler(
 # ============================================================
 # Clientes de infraestructura
 # ============================================================
-async def get_redis() -> RedisClient:
+async def get_redis() -> Any:
+    from src.infrastructure.cache.redis_client import get_redis_client
     return await get_redis_client()
 
 
-async def get_storage_client() -> R2Storage:
+async def get_storage_client() -> Any:
+    from src.infrastructure.storage.r2_storage import get_storage
     return get_storage()
 
 
-async def get_gemini() -> GeminiClient:
+async def get_gemini() -> Any:
+    from src.infrastructure.llm.gemini_client import get_gemini_client
     return get_gemini_client()
 
 
-async def get_event_bus_dep() -> RabbitMQEventBus:
+async def get_event_bus_dep() -> Any:
+    from src.infrastructure.messaging.rabbitmq import get_event_bus
     return await get_event_bus()
+
+
+# ============================================================
+# Servicios de autenticacion
+# ============================================================
+_jwt_service: Any = None
+_google_oauth_service: Any = None
+
+
+def get_jwt_service() -> Any:
+    """Provee el JWTService (singleton)."""
+    global _jwt_service
+    if _jwt_service is None:
+        from src.infrastructure.auth.jwt_service import JWTService
+
+        _jwt_service = JWTService(
+            secret=os.getenv("JWT_SECRET", "dev-secret"),
+            access_token_ttl=int(os.getenv("JWT_ACCESS_TTL", "900")),
+            refresh_token_ttl=int(os.getenv("JWT_REFRESH_TTL", "604800")),
+            issuer="finance-report",
+        )
+    return _jwt_service
+
+
+def get_google_oauth_service() -> Any:
+    """Provee el GoogleOAuthService (singleton)."""
+    global _google_oauth_service
+    if _google_oauth_service is None:
+        from src.infrastructure.auth.google_oauth_service import GoogleOAuthService
+
+        _google_oauth_service = GoogleOAuthService(
+            client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
+        )
+    return _google_oauth_service
+
+
+async def get_refresh_token_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Provee el RefreshTokenRepository."""
+    from src.infrastructure.persistence.repositories import RefreshTokenRepository
+
+    return RefreshTokenRepository(session)
 
 
 # ============================================================
@@ -159,8 +199,8 @@ async def get_current_user_id(
     En produccion, valida el JWT Bearer token.
     """
     if os.getenv("ENVIRONMENT") == "development":
-        # Modo desarrollo: aceptar X-User-Id header
-        return "dev-user-id"
+        # Modo desarrollo: usar un UUID valido para desarrollo/testing
+        return "00000000-0000-0000-0000-000000000001"
 
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
@@ -172,10 +212,8 @@ async def get_current_user_id(
     token = authorization.replace("Bearer ", "")
 
     try:
-        from jose import jwt, JWTError
-
-        secret = os.getenv("JWT_SECRET", "dev-secret")
-        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        jwt_svc = get_jwt_service()
+        payload = jwt_svc.validate_access_token(token)
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(
@@ -183,7 +221,7 @@ async def get_current_user_id(
                 detail="Token invalido: subject no encontrado",
             )
         return str(user_id)
-    except JWTError as e:
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Token invalido: {str(e)}",

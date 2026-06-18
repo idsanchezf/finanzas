@@ -11,10 +11,12 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from src.domain.repositories import IUnitOfWork
+
 logger = logging.getLogger(__name__)
 
 
-class UnitOfWork:
+class UnitOfWork(IUnitOfWork):
     """Gestiona transacciones de base de datos con SQLAlchemy async.
 
     Uso:

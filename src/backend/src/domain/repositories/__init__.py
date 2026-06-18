@@ -7,8 +7,39 @@ La capa de dominio solo depende de estas interfaces, no de la implementacion con
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import Any
 from uuid import UUID
+
+
+class IUnitOfWork(ABC):
+    """Unidad de trabajo — gestiona transacciones de base de datos.
+
+    Garantiza atomicidad en operaciones que involucran multiples repositorios.
+    """
+
+    @abstractmethod
+    async def commit(self) -> None:
+        """Confirma la transaccion actual."""
+        ...
+
+    @abstractmethod
+    async def rollback(self) -> None:
+        """Revierte la transaccion actual."""
+        ...
+
+    @abstractmethod
+    async def flush(self) -> None:
+        """Flush de cambios pendientes sin commit."""
+        ...
+
+    @abstractmethod
+    async def __aenter__(self) -> "IUnitOfWork":
+        ...
+
+    @abstractmethod
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        ...
 
 
 class IUsuarioRepository(ABC):
@@ -125,6 +156,18 @@ class ITransaccionRepository(ABC):
     ) -> int:
         ...
 
+    @abstractmethod
+    async def buscar_por_periodo(
+        self,
+        usuario_id: UUID,
+        fecha_inicio: date,
+        fecha_fin: date,
+        page: int = 1,
+        size: int = 50,
+    ) -> tuple[list[Any], int]:
+        """Busca transacciones de un usuario en un rango de fechas con paginacion."""
+        ...
+
 
 class ICategoriaRepository(ABC):
     """Repositorio de categorias."""
@@ -149,6 +192,13 @@ class ICategoriaRepository(ABC):
     async def delete(self, categoria_id: UUID) -> None:
         ...
 
+    @abstractmethod
+    async def buscar_por_nombre(
+        self, nombre: str, usuario_id: UUID | None = None
+    ) -> list[Any]:
+        """Busca categorias por coincidencia parcial en el nombre."""
+        ...
+
 
 class IPresupuestoRepository(ABC):
     """Repositorio de presupuestos."""
@@ -171,6 +221,7 @@ class IPresupuestoRepository(ABC):
 
 
 __all__ = [
+    "IUnitOfWork",
     "IUsuarioRepository",
     "ITarjetaRepository",
     "IExtractoRepository",

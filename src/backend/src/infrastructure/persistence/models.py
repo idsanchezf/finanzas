@@ -26,7 +26,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -63,9 +63,44 @@ class UsuarioModel(Base):
     # Relaciones
     tarjetas: Mapped[list[TarjetaModel]] = relationship(back_populates="usuario", lazy="selectin")
     extractos: Mapped[list[ExtractoModel]] = relationship(back_populates="usuario", lazy="selectin")
+    refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
+        back_populates="usuario", lazy="selectin"
+    )
 
     __table_args__ = (
         UniqueConstraint("auth_provider", "auth_provider_id", name="uq_auth_provider"),
+    )
+
+
+# ============================================================
+# RefreshToken
+# ============================================================
+class RefreshTokenModel(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
+    )
+    token_jti: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    # Relaciones
+    usuario: Mapped[UsuarioModel] = relationship(back_populates="refresh_tokens", lazy="joined")
+
+    __table_args__ = (
+        Index("ix_refresh_tokens_usuario", "usuario_id"),
+        Index("ix_refresh_tokens_jti", "token_jti"),
     )
 
 
@@ -195,6 +230,19 @@ class TransaccionModel(Base):
     parent: Mapped[TransaccionModel | None] = relationship(
         "TransaccionModel", remote_side=[id], foreign_keys=[parent_transaccion_id]
     )
+
+    # ============================================================
+    # Propiedades derivadas (compatibles con dominio)
+    # ============================================================
+    @property
+    def nombre_visible(self) -> str:
+        """Nombre amigable del comercio para mostrar al usuario."""
+        return self.comercio_traducido or self.comercio_original
+
+    @property
+    def es_confianza_baja(self) -> bool:
+        """True si la clasificacion tiene confianza baja (<70%)."""
+        return self.confidence is not None and self.confidence < 70
 
     __table_args__ = (
         Index("ix_transacciones_extracto", "extracto_id"),
