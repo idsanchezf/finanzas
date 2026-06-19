@@ -8,8 +8,6 @@ Verifica que las categorias predefinidas cumplan con los requisitos minimos:
 
 from __future__ import annotations
 
-import uuid
-
 import pytest
 
 from scripts.seed_categorias import (

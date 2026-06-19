@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 from jose import JWTError, jwt
 from starlette.middleware.base import BaseHTTPMiddleware
 

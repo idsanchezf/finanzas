@@ -13,7 +13,6 @@ Convenciones TDD:
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -25,9 +24,7 @@ import pytest
 from src.workers.extract_processor_service import (
     ExtractMessage,
     ExtractProcessorService,
-    ProcessResult,
 )
-
 
 # ============================================================
 # Helpers — Fixtures y fabricas

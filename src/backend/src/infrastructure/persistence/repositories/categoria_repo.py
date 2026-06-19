@@ -5,11 +5,11 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.persistence.models import CategoriaModel
 from src.domain.repositories import ICategoriaRepository
+from src.infrastructure.persistence.models import CategoriaModel
 
 
 class CategoriaRepository(ICategoriaRepository):

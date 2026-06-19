@@ -19,11 +19,10 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.domain.entities.categoria import Categoria
 from src.infrastructure.excel.clasificador_reglas import ClasificadorReglas
-from src.infrastructure.persistence.models import CategoriaModel, ExtractoModel, TransaccionModel
 from src.infrastructure.persistence.repositories.categoria_repo import CategoriaRepository
 from src.infrastructure.persistence.repositories.extracto_repo import ExtractoRepository
 from src.infrastructure.persistence.repositories.transaccion_repo import TransaccionRepository

@@ -4,11 +4,12 @@ FastAPI usa estos schemas para validacion, serializacion y documentacion OpenAPI
 Separados de las entidades de dominio para mantener la independencia de capas.
 """
 
-from pydantic import BaseModel, Field
-from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 # ============================================================

@@ -12,7 +12,6 @@ Convencion TDD:
 - Archivo: test_clasificar_por_reglas.py
 """
 
-from uuid import uuid4
 
 import pytest
 

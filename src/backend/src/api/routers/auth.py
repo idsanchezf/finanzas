@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
@@ -78,7 +77,7 @@ async def login(
 
     if not usuario:
         # Crear nuevo usuario
-        from src.domain.entities.usuario import Usuario, AuthProvider
+        from src.domain.entities.usuario import AuthProvider, Usuario
 
         nuevo_usuario = Usuario(
             email=email,
@@ -114,7 +113,7 @@ async def login(
         options={"verify_exp": False},  # Permitimos decodificar sin validar exp
     )
     refresh_jti = refresh_payload["jti"]
-    refresh_exp = datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc)
+    refresh_exp = datetime.fromtimestamp(refresh_payload["exp"], tz=UTC)
 
     # 4. Persistir refresh token para poder revocarlo
     await refresh_token_repo.save(
@@ -211,7 +210,7 @@ async def refresh_token(
         options={"verify_exp": False},
     )
     new_jti = new_payload["jti"]
-    new_exp = datetime.fromtimestamp(new_payload["exp"], tz=timezone.utc)
+    new_exp = datetime.fromtimestamp(new_payload["exp"], tz=UTC)
 
     await refresh_token_repo.save(
         usuario_id=uuid.UUID(user_id),

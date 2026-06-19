@@ -7,7 +7,7 @@ Los workers y otros servicios consumen estos eventos via RabbitMQ.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -17,7 +17,7 @@ class DomainEvent:
     """Evento base del dominio."""
 
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -33,7 +33,7 @@ class ExtractoCargado:
     tarjeta_id: UUID
     s3_key: str = ""
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -49,7 +49,7 @@ class ExtractoProcesado:
     tarjeta_id: UUID
     transaction_count: int = 0
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -66,7 +66,7 @@ class TransaccionClasificada:
     categoria_anterior: UUID | None = None
     confidence: Decimal = field(default_factory=lambda: Decimal("0"))
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -85,7 +85,7 @@ class CategoriaCorregida:
     categoria_anterior: UUID | None = None
     comercio_original: str = ""
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -102,7 +102,7 @@ class PresupuestoAlcanzado:
     porcentaje: Decimal = field(default_factory=lambda: Decimal("0"))
     umbral: str = "80"  # "80" o "100"
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -119,7 +119,7 @@ class HabitoDetectado:
     mensaje: str = ""
     severidad: str = "medium"  # "low", "medium", "high", "critical"
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:
@@ -135,7 +135,7 @@ class RecordatorioPendiente:
     tarjeta_id: UUID | None = None
     fecha_limite: datetime | None = None
     event_id: UUID = field(default_factory=uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def event_name(self) -> str:

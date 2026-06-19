@@ -18,7 +18,6 @@ from src.domain.entities.extracto import EstadoExtracto, Extracto
 from src.domain.entities.transaccion import Transaccion
 from src.domain.value_objects.money import Money
 
-
 # ============================================================
 # TestInit — Creacion y valores por defecto
 # ============================================================

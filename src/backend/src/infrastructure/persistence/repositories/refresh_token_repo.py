@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +55,7 @@ class RefreshTokenRepository:
         stmt = select(RefreshTokenModel).where(
             RefreshTokenModel.token_jti == token_jti,
             RefreshTokenModel.revoked == False,
-            RefreshTokenModel.expires_at > datetime.now(timezone.utc),
+            RefreshTokenModel.expires_at > datetime.now(UTC),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

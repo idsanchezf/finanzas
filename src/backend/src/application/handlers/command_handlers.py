@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 from typing import Any
-from uuid import UUID
 
 from src.application.commands import (
     CargarExtractoCommand,

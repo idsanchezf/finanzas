@@ -1,0 +1,49 @@
+# ============================================================
+# Finance Report — Pod Disruption Budgets
+# ============================================================
+# Garantiza alta disponibilidad durante operaciones de
+# mantenimiento del cluster (drain de nodos, upgrades).
+# ============================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: finance-backend-pdb
+  namespace: finance-report
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: finance-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: finance-extract-pdb
+  namespace: finance-report
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: finance-extract-processor
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: finance-classification-pdb
+  namespace: finance-report
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: finance-classification
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+  namespace: finance-report
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: rabbitmq

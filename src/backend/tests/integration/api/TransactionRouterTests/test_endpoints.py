@@ -14,9 +14,9 @@ Usa TestClient (httpx.AsyncClient) + SQLite en memoria via aiosqlite.
 from __future__ import annotations
 
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import date
 from decimal import Decimal
-from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -63,13 +63,11 @@ async def _build_test_app(
         get_current_user_id,
         get_db_session,
         get_extracto_repo,
-        get_query_handler,
         get_transaccion_repo,
         get_usuario_repo,
     )
     from src.api.routers.transactions import router as transactions_router
     from src.application.handlers.command_handlers import CommandHandler
-    from src.application.handlers.query_handlers import QueryHandler
     from src.infrastructure.persistence.repositories import (
         CategoriaRepository,
         ExtractoRepository,

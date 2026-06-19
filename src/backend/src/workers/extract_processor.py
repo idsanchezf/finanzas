@@ -33,7 +33,6 @@ from src.infrastructure.storage.r2_storage import R2Storage, get_storage
 from src.workers.extract_processor_service import (
     ExtractMessage,
     ExtractProcessorService,
-    ProcessResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ async def run_rabbitmq_mode(
     """Ejecuta el worker en modo RabbitMQ consumer."""
     logger.info("Iniciando ExtractProcessor en modo RabbitMQ...")
     logger.info(f"RabbitMQ URL: {rabbitmq_url}")
-    logger.info(f"Cola: extractos.procesar")
+    logger.info("Cola: extractos.procesar")
 
     consumer = ExtractProcessorConsumer(
         url=rabbitmq_url,
@@ -68,7 +67,7 @@ async def run_rabbitmq_mode(
         await consumer.start()
     except KeyboardInterrupt:
         logger.info("Worker detenido por el usuario (Ctrl+C)")
-    except Exception as e:
+    except Exception:
         logger.error("Error fatal en modo RabbitMQ", exc_info=True)
         raise
     finally:
@@ -87,10 +86,11 @@ async def run_polling_mode(
 
     Util cuando RabbitMQ no esta disponible (desarrollo local, testing).
     """
+    from sqlalchemy import select
+
+    from src.infrastructure.persistence.models import ExtractoModel
     from src.infrastructure.persistence.repositories.extracto_repo import ExtractoRepository
     from src.infrastructure.persistence.repositories.transaccion_repo import TransaccionRepository
-    from src.infrastructure.persistence.models import ExtractoModel
-    from sqlalchemy import select
 
     logger.info(f"Iniciando ExtractProcessor en modo POLLING (intervalo={poll_interval}s)...")
 
@@ -146,7 +146,7 @@ async def run_polling_mode(
                                     f"{result.parse_errors}"
                                 )
 
-                        except Exception as e:
+                        except Exception:
                             await session.rollback()
                             logger.error(
                                 f"Error procesando extracto {extracto_model.id} en polling",
@@ -155,7 +155,7 @@ async def run_polling_mode(
                 else:
                     logger.debug("Polling: sin extractos pendientes")
 
-        except Exception as e:
+        except Exception:
             logger.error("Error en ciclo de polling", exc_info=True)
 
         await asyncio.sleep(poll_interval)

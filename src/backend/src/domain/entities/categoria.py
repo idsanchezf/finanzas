@@ -7,7 +7,7 @@ Contiene palabras clave para el motor de reglas deterministicas.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 
@@ -23,7 +23,7 @@ class Categoria:
     es_predefinida: bool = False
     usuario_id: UUID | None = None
     palabras_clave: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def es_subcategoria(self) -> bool:

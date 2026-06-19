@@ -7,14 +7,12 @@ y dependency overrides para mockear la capa de BD.
 
 from __future__ import annotations
 
-import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -30,7 +28,7 @@ class MockUsuario:
         self.id = kwargs.get("id", uuid.uuid4())
         self.email = kwargs.get("email", "dev@financereport.local")
         self.nombre = kwargs.get("nombre", "Dev User")
-        self.avatar_url = kwargs.get("avatar_url", None)
+        self.avatar_url = kwargs.get("avatar_url")
 
 
 class MockRefreshToken:
@@ -39,7 +37,7 @@ class MockRefreshToken:
         self.id = kwargs.get("id", uuid.uuid4())
         self.usuario_id = kwargs.get("usuario_id", uuid.uuid4())
         self.token_jti = kwargs.get("token_jti", str(uuid.uuid4()))
-        self.expires_at = kwargs.get("expires_at", datetime.now(timezone.utc))
+        self.expires_at = kwargs.get("expires_at", datetime.now(UTC))
         self.revoked = kwargs.get("revoked", False)
 
 

@@ -13,9 +13,10 @@ Usa TestClient (httpx.AsyncClient) + SQLite en memoria via aiosqlite.
 from __future__ import annotations
 
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import date
 from decimal import Decimal
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -85,24 +86,13 @@ async def _build_test_app(
     usuario_id: uuid.UUID = TEST_USER_ID,
 ) -> FastAPI:
     """Construye un app FastAPI con el router de dashboard y overrides."""
-    from fastapi import Depends
 
     from src.api.dependencies import (
-        get_categoria_repo,
         get_current_user_id,
         get_db_session,
-        get_extracto_repo,
-        get_query_handler,
         get_redis,
-        get_transaccion_repo,
     )
     from src.api.routers.dashboard import router as dashboard_router
-    from src.application.handlers.query_handlers import QueryHandler
-    from src.infrastructure.persistence.repositories import (
-        CategoriaRepository,
-        ExtractoRepository,
-        TransaccionRepository,
-    )
 
     app = FastAPI()
     app.include_router(dashboard_router, prefix="/api/v1/dashboard")

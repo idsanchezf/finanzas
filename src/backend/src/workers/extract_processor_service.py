@@ -14,7 +14,6 @@ from __future__ import annotations
 import base64
 import logging
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -23,7 +22,7 @@ from src.domain.entities.extracto import EstadoExtracto
 from src.domain.entities.transaccion import Transaccion
 from src.domain.events import ExtractoProcesado
 from src.domain.value_objects.money import Money
-from src.infrastructure.excel.parser import ExtractoExcelParser, ExtractoParseado
+from src.infrastructure.excel.parser import ExtractoExcelParser
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class ExtractMessage:
     file_content_b64: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ExtractMessage":
+    def from_dict(cls, data: dict[str, Any]) -> ExtractMessage:
         """Construye desde el dict recibido en el mensaje de RabbitMQ.
 
         Soporta multiples convenciones de nombres:

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 import structlog
 from dotenv import load_dotenv
@@ -45,6 +45,15 @@ structlog.configure(
 )
 
 logger = structlog.get_logger(__name__)
+
+# Inicializar OpenTelemetry (traces + metrics) si esta configurado
+try:
+    from src.infrastructure.observability.otel import init_observability
+    init_observability()
+except Exception as e:
+    logging.getLogger(__name__).warning(
+        f"No se pudo inicializar OpenTelemetry: {e}"
+    )
 
 
 # ============================================================
@@ -106,8 +115,8 @@ app.add_middleware(
 )
 
 # Middleware de logging y correlation ID
-from src.api.middleware.logging import LoggingMiddleware
 from src.api.middleware.error_handler import ErrorHandlerMiddleware
+from src.api.middleware.logging import LoggingMiddleware
 
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
@@ -132,8 +141,9 @@ async def health_readiness():
 
     # Verificar BD
     try:
-        from src.infrastructure.persistence.unit_of_work import create_session_factory
         from sqlalchemy import text
+
+        from src.infrastructure.persistence.unit_of_work import create_session_factory
 
         db_url = os.getenv("DATABASE_URL", "")
         if db_url:
@@ -166,16 +176,16 @@ async def health_readiness():
 # Routers — API v1
 # ============================================================
 from src.api.routers import (
-    extracts,
-    transactions,
-    categories,
-    dashboard,
-    insights,
-    budgets,
-    chat,
     auth,
-    notifications,
+    budgets,
+    categories,
+    chat,
+    dashboard,
+    extracts,
+    insights,
     merchants,
+    notifications,
+    transactions,
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticacion"])

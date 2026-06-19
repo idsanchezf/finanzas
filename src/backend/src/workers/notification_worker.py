@@ -32,7 +32,7 @@ async def main() -> None:
         await consumer.start()
     except KeyboardInterrupt:
         logger.info("Worker detenido por el usuario")
-    except Exception as e:
+    except Exception:
         logger.error("Error fatal en el worker", exc_info=True)
     finally:
         await consumer.stop()

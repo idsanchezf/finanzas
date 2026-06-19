@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from src.infrastructure.auth.google_oauth_service import GoogleOAuthService
 
 

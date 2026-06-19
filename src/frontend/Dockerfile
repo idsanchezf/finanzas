@@ -58,6 +58,6 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+    CMD node -e "const http=require('http');const req=http.get('http://localhost:3000',r=>{process.exit(r.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.end()"
 
 CMD ["node", "server.js"]

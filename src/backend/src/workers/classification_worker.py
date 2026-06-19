@@ -114,6 +114,7 @@ class PollingClassificationWorker:
     async def _poll_loop(self) -> None:
         """Bucle principal de polling."""
         from sqlalchemy import select
+
         from src.infrastructure.persistence.models import ExtractoModel, TransaccionModel
 
         while self._running:
@@ -216,7 +217,7 @@ async def main() -> None:
         await shutdown_event.wait()
     except KeyboardInterrupt:
         logger.info("Worker detenido por el usuario")
-    except Exception as e:
+    except Exception:
         logger.error("Error fatal en el worker", exc_info=True)
     finally:
         await worker.stop()

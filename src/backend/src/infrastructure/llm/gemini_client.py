@@ -6,9 +6,9 @@ Soporta streaming de respuestas via SSE y function calling para consultar la BD.
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig

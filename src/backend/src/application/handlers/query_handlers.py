@@ -24,9 +24,9 @@ from src.application.queries import (
     ObtenerTransaccionesQuery,
 )
 from src.domain.repositories import (
+    ICategoriaRepository,
     IExtractoRepository,
     ITransaccionRepository,
-    ICategoriaRepository,
 )
 
 logger = logging.getLogger(__name__)

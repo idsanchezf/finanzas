@@ -7,7 +7,7 @@ Contiene metadatos del periodo de facturacion y el estado de procesamiento.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -49,7 +49,7 @@ class Extracto:
     archivo_s3_key: str | None = None
     error_message: str | None = None
     progress_pct: int = 0
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Transacciones asociadas (lazy loaded por el repositorio)
     transacciones: list[Any] = field(default_factory=list)

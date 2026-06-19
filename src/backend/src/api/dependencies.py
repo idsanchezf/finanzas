@@ -23,7 +23,6 @@ from src.infrastructure.persistence.repositories import (
 )
 from src.infrastructure.persistence.unit_of_work import create_session_factory
 
-
 # ============================================================
 # Database session
 # ============================================================

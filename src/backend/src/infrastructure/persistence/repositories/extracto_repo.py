@@ -6,11 +6,11 @@ import uuid
 from datetime import date
 from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.persistence.models import ExtractoModel
 from src.domain.repositories import IExtractoRepository
+from src.infrastructure.persistence.models import ExtractoModel
 
 
 class ExtractoRepository(IExtractoRepository):

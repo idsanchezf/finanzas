@@ -14,7 +14,7 @@ Convencion TDD:
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
@@ -149,8 +149,8 @@ class TestProcessExtract:
     def mock_repos(self, monkeypatch, mock_session):
         """Mockea los repositorios para que usen mock_session y retornen datos de prueba."""
         from src.infrastructure.persistence.repositories import categoria_repo as cr_mod
-        from src.infrastructure.persistence.repositories import transaccion_repo as tr_mod
         from src.infrastructure.persistence.repositories import extracto_repo as er_mod
+        from src.infrastructure.persistence.repositories import transaccion_repo as tr_mod
 
         # Guardamos referencias para que los tests las configuren
         mocks = {

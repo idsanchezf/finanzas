@@ -8,8 +8,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.persistence.models import UsuarioModel
 from src.domain.repositories import IUsuarioRepository
+from src.infrastructure.persistence.models import UsuarioModel
 
 
 class UsuarioRepository(IUsuarioRepository):

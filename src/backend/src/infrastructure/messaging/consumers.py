@@ -15,12 +15,12 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import aio_pika
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.infrastructure.messaging.rabbitmq import EXCHANGE_NAME
-from src.infrastructure.persistence.unit_of_work import UnitOfWork
 from src.infrastructure.persistence.repositories.extracto_repo import ExtractoRepository
 from src.infrastructure.persistence.repositories.transaccion_repo import TransaccionRepository
+from src.infrastructure.persistence.unit_of_work import UnitOfWork
 from src.workers.extract_processor_service import (
     ExtractMessage,
     ExtractProcessorService,
@@ -83,7 +83,7 @@ class BaseConsumer(ABC):
 
                 await self.process_message(body, message.headers)
 
-            except Exception as e:
+            except Exception:
                 logger.error(
                     f"Error procesando mensaje en {self.queue_name}",
                     exc_info=True,
@@ -256,9 +256,10 @@ class ClassificationConsumer(BaseConsumer):
 
         if self._service is None:
             # Lazy import e inicializacion si no se inyecto
-            from src.workers.classification_service import ClassificationService
-            from src.infrastructure.persistence.unit_of_work import create_session_factory
             import os
+
+            from src.infrastructure.persistence.unit_of_work import create_session_factory
+            from src.workers.classification_service import ClassificationService
 
             database_url = os.getenv(
                 "DATABASE_URL",

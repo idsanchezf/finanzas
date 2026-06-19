@@ -10,10 +10,9 @@ from __future__ import annotations
 import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -143,8 +142,8 @@ async def session_factory():
     Usa un archivo temporal para que multiples sesiones (test y API handler)
     compartan la misma base de datos. Se limpia automaticamente al final.
     """
-    import tempfile
     import os
+    import tempfile
 
     db_fd, db_path = tempfile.mkstemp(suffix=".db", prefix="test_finance_")
     os.close(db_fd)  # cerramos el fd, solo usamos el path

@@ -104,7 +104,7 @@ class TestEdgeCases:
         """Ante ambiguedad, elige la categoria con mas keywords matcheadas."""
         # Arrange --------------------------------------------------------
         # "spotify" esta en Entretenimiento (1 match)
-        # Si hay un comercio que matchea "suscripcion" (Suscripciones: 1) 
+        # Si hay un comercio que matchea "suscripcion" (Suscripciones: 1)
         # y "spotify" (Entretenimiento: 1), deberia desempatar por confianza
         comercio = "SUSCRIPCION SPOTIFY PREMIUM"
 

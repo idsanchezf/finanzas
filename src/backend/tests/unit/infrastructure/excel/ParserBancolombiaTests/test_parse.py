@@ -15,7 +15,6 @@ Convencion TDD:
 - Archivo: test_parse.py
 """
 
-import os
 from decimal import Decimal
 
 import pytest
