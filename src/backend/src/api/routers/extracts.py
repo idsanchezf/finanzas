@@ -13,9 +13,11 @@ from src.api.dependencies import (
     get_extracto_repo,
     get_query_handler,
     get_storage_client,
+    get_tarjeta_repo,
 )
 from src.application.commands.cargar_extracto import CargarExtractoCommand
 from src.application.queries.obtener_extractos import ObtenerExtractosQuery
+from src.domain.entities.tarjeta import Tarjeta, TipoTarjeta
 
 router = APIRouter()
 
@@ -23,16 +25,36 @@ router = APIRouter()
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_extract(
     file: UploadFile = File(...),
-    tarjeta_id: str = Query(..., description="ID de la tarjeta"),
+    tarjeta_id: str | None = Query(None, description="ID de la tarjeta (se auto-crea si no se envia)"),
     user_id: str = Depends(get_current_user_id),
     command_handler: Any = Depends(get_command_handler),
     storage: Any = Depends(get_storage_client),
+    tarjeta_repo: Any = Depends(get_tarjeta_repo),
 ):
     """Carga un archivo Excel de extracto bancario y registra su procesamiento.
 
     El archivo se almacena en R2 y se publica el evento ExtractoCargado
     para que el worker de procesamiento lo procese asincronicamente.
     """
+    uid = uuid.UUID(user_id)
+
+    # Si no se especifica tarjeta, buscar o crear una por defecto
+    target_tarjeta_id: uuid.UUID
+    if tarjeta_id:
+        target_tarjeta_id = uuid.UUID(tarjeta_id)
+    else:
+        tarjetas = await tarjeta_repo.get_by_usuario(uid)
+        if tarjetas:
+            target_tarjeta_id = tarjetas[0].id
+        else:
+            default_tarjeta = Tarjeta(
+                usuario_id=uid,
+                banco="Desconocido",
+                ultimos_4_digitos="0000",
+                alias="Tarjeta principal",
+            )
+            saved = await tarjeta_repo.save(default_tarjeta)
+            target_tarjeta_id = saved.id if hasattr(saved, "id") else saved.id
     # Validar formato
     if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
         raise HTTPException(
@@ -64,8 +86,8 @@ async def upload_extract(
 
     # Registrar extracto via command
     cmd = CargarExtractoCommand(
-        usuario_id=uuid.UUID(user_id),
-        tarjeta_id=uuid.UUID(tarjeta_id),
+        usuario_id=uid,
+        tarjeta_id=target_tarjeta_id,
         filename=file.filename,
         file_content=content,
     )

@@ -21,6 +21,6 @@ class CargarExtractoCommand:
     """
 
     usuario_id: UUID
-    tarjeta_id: UUID
     filename: str
     file_content: bytes  # Contenido del archivo Excel
+    tarjeta_id: UUID | None = None  # Opcional: se auto-crea tarjeta default si no se especifica

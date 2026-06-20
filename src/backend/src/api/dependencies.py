@@ -198,7 +198,18 @@ async def get_current_user_id(
     En produccion, valida el JWT Bearer token.
     """
     if os.getenv("ENVIRONMENT") == "development":
-        # Modo desarrollo: usar un UUID valido para desarrollo/testing
+        # Modo desarrollo: si hay token JWT valido, extraer user_id real
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+            try:
+                jwt_svc = get_jwt_service()
+                payload = jwt_svc.validate_access_token(token)
+                user_id = payload.get("sub")
+                if user_id:
+                    return str(user_id)
+            except Exception:
+                pass
+        # Fallback: UUID placeholder para desarrollo sin auth
         return "00000000-0000-0000-0000-000000000001"
 
     if not authorization or not authorization.startswith("Bearer "):

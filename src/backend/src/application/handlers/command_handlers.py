@@ -204,7 +204,7 @@ class CommandHandler:
         )
 
         return {
-            "extracto_id": str(extracto.id),
+            "extract_id": str(extracto.id),
             "estado": extracto.estado.value if hasattr(extracto.estado, "value") else str(extracto.estado),
             "progress_pct": extracto.progress_pct,
             "transacciones_count": transaction_count,
