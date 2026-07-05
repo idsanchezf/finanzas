@@ -1,0 +1,55 @@
+{
+  "featureId": "feat-003",
+  "featureName": "Prevenir extractos duplicados",
+  "tasks": [
+    {
+      "id": "T001",
+      "description": "Analisis DDD: modelar regla de negocio de no-duplicidad de extractos por tarjeta+periodo",
+      "layer": "Analysis",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T002",
+      "description": "Definir API contract para endpoint POST /extracts/upload con respuesta 409 Conflict",
+      "layer": "Design",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T003",
+      "description": "Implementar pre-flight check: llamar get_by_tarjeta_and_periodo() antes de insertar",
+      "layer": "Application",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T004",
+      "description": "Handler devuelve 409 Conflict con mensaje descriptivo al detectar duplicado",
+      "layer": "Application",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T005",
+      "description": "Escribir test unitario: Should_Return409Conflict_When_DuplicateExtractDetected",
+      "layer": "Test",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T006",
+      "description": "Escribir test de integracion: verificar que carga duplicada retorna 409",
+      "layer": "Test",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    },
+    {
+      "id": "T007",
+      "description": "Manejar race condition: asegurar que validacion e insercion son atomicas (transaccion BD o unique constraint como safety net)",
+      "layer": "Infrastructure",
+      "status": "done",
+      "completedAt": "2026-07-04T00:00:00Z"
+    }
+  ]
+}

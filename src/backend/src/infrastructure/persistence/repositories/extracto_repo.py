@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories import IExtractoRepository
@@ -58,21 +59,47 @@ class ExtractoRepository(IExtractoRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_tarjeta_and_file_hash(
+        self, tarjeta_id: uuid.UUID, file_hash: str
+    ) -> ExtractoModel | None:
+        """Fix #3: Busca extracto existente por tarjeta_id + hash SHA-256 del archivo.
+
+        Usado como verificacion secundaria de duplicados cuando el chequeo
+        por periodo no encuentra coincidencia pero el mismo archivo ya fue cargado.
+        """
+        stmt = select(ExtractoModel).where(
+            ExtractoModel.tarjeta_id == tarjeta_id,
+            ExtractoModel.file_hash == file_hash,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def save(self, extracto: Any) -> Any:
         """Persiste un extracto (crea o actualiza).
 
         Si es un modelo ORM ya gestionado por SQLAlchemy, usa merge directo.
         Si es una entidad de dominio, la convierte a modelo y usa merge
         para soportar tanto insercion como actualizacion.
+
+        Captura IntegrityError del constraint uq_extracto_tarjeta_periodo
+        como safety net ante race conditions (feat-003 / T007).
         """
         if hasattr(extracto, "_sa_instance_state"):
-            await self.session.merge(extracto)
+            modelo = extracto
+            modelo = await self.session.merge(modelo)
         else:
             modelo = self._to_model(extracto)
             modelo = await self.session.merge(modelo)
-            extracto = modelo
-        await self.session.flush()
-        return extracto
+
+        try:
+            await self.session.flush()
+        except IntegrityError:
+            await self.session.rollback()
+            from src.domain.exceptions import ExtractoDuplicadoException
+
+            raise ExtractoDuplicadoException() from None
+
+        return modelo
 
     async def delete(self, extracto_id: uuid.UUID) -> None:
         extracto = await self.get_by_id(extracto_id)
@@ -101,6 +128,7 @@ class ExtractoRepository(IExtractoRepository):
             cupo_total=_amount(entity.cupo_total),
             cupo_disponible=_amount(entity.cupo_disponible),
             archivo_s3_key=entity.archivo_s3_key,
+            file_hash=getattr(entity, "file_hash", None),
             progress_pct=entity.progress_pct,
             error_message=entity.error_message,
         )

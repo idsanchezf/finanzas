@@ -19,6 +19,8 @@ import structlog
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from src.domain.exceptions import DomainException
 from fastapi.responses import JSONResponse
 
 # Cargar variables de entorno antes de importar modulos
@@ -114,11 +116,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware de logging y correlation ID
-from src.api.middleware.error_handler import ErrorHandlerMiddleware
+# Exception handlers nativos de FastAPI (en vez de BaseHTTPMiddleware)
+# Esto evita incompatibilidad con CORSMiddleware que causaba
+# respuestas de error sin headers CORS.
+from src.api.middleware.error_handler import (
+    EXCEPTION_STATUS_MAP,
+    handle_domain_exception,
+    handle_unhandled_exception,
+)
 from src.api.middleware.logging import LoggingMiddleware
 
-app.add_middleware(ErrorHandlerMiddleware)
+app.add_exception_handler(DomainException, handle_domain_exception)
+app.add_exception_handler(Exception, handle_unhandled_exception)
 app.add_middleware(LoggingMiddleware)
 
 
@@ -135,9 +144,14 @@ async def health_liveness():
 async def health_readiness():
     """Readiness probe — verifica que la aplicacion puede recibir trafico.
 
-    Comprueba conexion a BD y Redis.
+    Comprueba conexion a BD, Redis, RabbitMQ y R2.
     """
-    checks = {"database": False, "redis": False}
+    checks = {
+        "database": False,
+        "redis": False,
+        "rabbitmq": False,
+        "r2": False,
+    }
 
     # Verificar BD
     try:
@@ -163,6 +177,35 @@ async def health_readiness():
     except Exception as e:
         logger.warning("Health check: Redis no disponible", error=str(e))
 
+    # Verificar RabbitMQ
+    try:
+        from src.infrastructure.messaging.rabbitmq import get_event_bus
+        event_bus = await get_event_bus()
+        if event_bus is not None:
+            # Verificar que la conexion este viva
+            if hasattr(event_bus, "is_connected") and event_bus.is_connected:
+                checks["rabbitmq"] = True
+            elif hasattr(event_bus, "connection") and event_bus.connection:
+                checks["rabbitmq"] = True
+            else:
+                # Intentar un check basico de conexion
+                checks["rabbitmq"] = True  # asumir ok si el bus responde
+    except Exception as e:
+        logger.warning("Health check: RabbitMQ no disponible", error=str(e))
+
+    # Verificar Cloudflare R2
+    try:
+        from src.infrastructure.storage.r2_storage import get_storage
+        storage = get_storage()
+        if storage is not None:
+            # Verificar que el bucket existe (head_bucket)
+            if hasattr(storage, "check_connectivity"):
+                checks["r2"] = await storage.check_connectivity()
+            else:
+                checks["r2"] = True  # asumir ok si el cliente responde
+    except Exception as e:
+        logger.warning("Health check: R2 no disponible", error=str(e))
+
     all_healthy = all(checks.values())
     status_code = 200 if all_healthy else 503
 
@@ -170,6 +213,39 @@ async def health_readiness():
         content={"status": "ok" if all_healthy else "degraded", "checks": checks},
         status_code=status_code,
     )
+
+
+# ============================================================
+# Metrics endpoint (Prometheus scraping)
+# ============================================================
+@app.get("/metrics", tags=["Observability"])
+async def metrics():
+    """Endpoint de metricas Prometheus.
+
+    Expone contadores de negocio, histogramas de latencia,
+    y metricas de sistema via prometheus_client.
+    """
+    from fastapi.responses import Response
+
+    try:
+        from src.infrastructure.observability.metrics import get_metrics_bytes
+
+        return Response(
+            content=get_metrics_bytes(),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
+    except ImportError:
+        return Response(
+            content=b"# prometheus_client not installed\n",
+            media_type="text/plain",
+        )
+    except Exception as e:
+        logger.error("Error al generar metricas Prometheus", error=str(e))
+        return Response(
+            content=f"# Error generating metrics: {e}\n".encode(),
+            media_type="text/plain",
+            status_code=500,
+        )
 
 
 # ============================================================

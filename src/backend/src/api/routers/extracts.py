@@ -92,13 +92,12 @@ async def upload_extract(
         file_content=content,
     )
 
-    try:
-        result = await command_handler.handle_cargar_extracto(cmd)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al registrar el extracto: {str(e)}",
-        ) from e
+    # Las excepciones de dominio (ExtractoDuplicadoException, TarjetaNoEncontradaException, etc.)
+    # se propagan al middleware ErrorHandlerMiddleware que las mapea a HTTP status codes adecuados:
+    #   - EXTRACTO_DUPLICADO    -> 409 Conflict
+    #   - TARJETA_NO_ENCONTRADA -> 404 Not Found
+    #   - VALIDACION_FALLIDA    -> 422 Unprocessable Entity
+    result = await command_handler.handle_cargar_extracto(cmd)
 
     return result
 

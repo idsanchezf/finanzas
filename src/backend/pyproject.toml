@@ -60,6 +60,7 @@ aioboto3 = "^13.2.0"
 structlog = "^24.4.0"
 
 # Observability
+prometheus-client = "^0.21.0"
 opentelemetry-api = "^1.28.0"
 opentelemetry-sdk = "^1.28.0"
 opentelemetry-instrumentation-fastapi = ">=0.49b0"
@@ -85,6 +86,7 @@ python-slugify = "^8.0.4"
 # Testing
 pytest = "^8.3.0"
 pytest-asyncio = "^0.24.0"
+pytest-bdd = "^8.0.0"
 pytest-cov = "^6.0.0"
 pytest-mock = "^3.14.0"
 fakeredis = "^2.26.0"

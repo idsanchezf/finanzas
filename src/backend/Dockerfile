@@ -2,9 +2,13 @@
 # Finance Report — Backend Dockerfile (multi-stage)
 # ============================================================
 # Etapas:
-#   builder    — Instala dependencias de produccion (poetry)
+#   builder    — Instala dependencias de produccion (pip)
 #   development — Imagen para desarrollo con hot-reload
 #   production — Imagen final optimizada para produccion
+#
+# Optimizacion: usa pip install -r requirements.txt en vez de
+# poetry install para builds mas rapidos (evita resolver
+# dependencias transitivas sin poetry.lock).
 # ============================================================
 
 ARG PYTHON_VERSION=3.12-slim
@@ -16,10 +20,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONFAULTHANDLER=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    POETRY_VERSION=1.8.3 \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=false
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=5
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,10 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# Instalar Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
 
 WORKDIR /app
 
@@ -40,20 +38,18 @@ WORKDIR /app
 # ============================================================
 FROM base AS builder
 
-COPY pyproject.toml poetry.lock* ./
-
-# Instalar solo dependencias de produccion
-RUN poetry install --only main --no-root --no-directory
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # ============================================================
 # Stage: development — Para desarrollo con hot-reload
 # ============================================================
-FROM base AS development
+FROM builder AS development
 
 # Instalar dependencias de desarrollo
-COPY pyproject.toml poetry.lock* ./
-RUN poetry install --no-root --no-directory
+COPY requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY . .
 
@@ -73,6 +69,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario no-root

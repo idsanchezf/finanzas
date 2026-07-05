@@ -1,24 +1,27 @@
-# Arquitectura del Sistema — Finance Report
+# Arquitectura del Sistema Finance Report
 
-> **Ultima actualizacion**: 2026-06-02
-> **Version**: 1.0
-
----
+> Ultima actualizacion: 2026-07-04
+> Version: 1.0.0
 
 ## 1. Proposito y alcance
 
-Finance Report es una aplicacion de **clasificacion y analisis de gastos personales** a partir de extractos bancarios en formato Excel (.xlsx). El sistema permite a usuarios en Colombia (y eventualmente otros paises hispanohablantes) cargar sus extractos de tarjeta de credito, clasificar automaticamente cada transaccion en categorias predefinidas o personalizadas, y visualizar dashboards interactivos con KPIs financieros, deteccion de malos habitos, presupuestos, metas de ahorro, y un asistente IA en espanol.
+Finance Report es un **SaaS multi-tenant** para carga, clasificacion y analisis de gastos personales a partir de extractos bancarios en formato Excel (.xlsx). El sistema permite a usuarios cargar sus extractos mensuales de tarjetas de credito, clasificar automaticamente las transacciones por categoria, y obtener analitica financiera avanzada mediante dashboards interactivos, deteccion de habitos financieros y un asistente con IA.
 
-**Alcance funcional**:
-- Carga y parseo inteligente de extractos bancarios Excel (multi-banco)
-- Clasificacion hibrida de transacciones (reglas deterministicas + ML)
-- Dashboards con graficos interactivos (donut, barras, lineas, treemap, heatmap, proyeccion de cuotas)
-- Deteccion automatica de malos habitos financieros (8 tipos de alertas)
-- Presupuestos por categoria y metas de ahorro
-- Asistente financiero con IA (chat en lenguaje natural)
-- Traduccion colaborativa de nombres de comercios
-- Soporte multi-moneda inteligente (COP + USD + monedas extranjeras)
-- Notificaciones push/email y recordatorios de pago
+### Alcance funcional (por fase)
+
+| Fase | Features | Estado |
+|------|----------|--------|
+| MVP (feat-001) | Scaffolding, estructura base Clean Architecture + DDD, API REST, modelo de datos, parser de extractos Bancolombia | Completada |
+| feat-002 | Identificacion de tarjeta desde extracto (banco + ultimos 4 digitos), find-or-create en flujo de carga | Completada |
+| feat-003 | Prevencion de extractos duplicados: validacion pre-flight, respuesta 409 Conflict | En progreso (analisis) |
+| Roadmap | Clasificacion de gastos (RF02), Dashboard (RF03), Habitos financieros (RF04), Presupuestos (RF05), Asistente IA (RF08) | Pendiente |
+
+### Alcance tecnico
+
+- **Backend**: API REST asincrona con FastAPI, siguiendo Clean Architecture + Domain-Driven Design
+- **Frontend**: SPA con Next.js (React), mobile-first con diseño responsivo
+- **Infraestructura**: Contenedores Docker, orquestacion con Docker Compose (dev), CI/CD con GitHub Actions
+- **Multi-banco**: Arquitectura preparada para soportar extractos de multiples bancos (Bancolombia inicialmente). Estrategia de parser configurable por banco.
 
 ---
 
@@ -26,26 +29,29 @@ Finance Report es una aplicacion de **clasificacion y analisis de gastos persona
 
 ```mermaid
 C4Context
-    title Finance Report — Diagrama de Contexto
+    title Diagrama de contexto — Finance Report
 
-    Person(usuario, "Usuario", "Persona que carga extractos bancarios y consulta analisis financieros. 80% movil.")
-    Person(admin, "Administrador", "Gestiona la plataforma, usuarios y configuracion global.")
+    Person(usuario, "Usuario", "Persona natural que carga sus extractos bancarios mensuales y consulta analisis. Uso 80% movil.")
 
-    System(financeReport, "Finance Report", "Aplicacion de clasificacion y analisis de gastos personales a partir de extractos bancarios Excel.")
+    System(finance_report, "Finance Report", "SaaS multi-tenant para carga, clasificacion y analisis de gastos a partir de extractos bancarios Excel.")
 
-    System_Ext(banco, "Banco / Extracto Excel", "Origen de los archivos .xlsx con transacciones mensuales de tarjeta de credito.")
-    System_Ext(googleAuth, "Google OAuth2", "Proveedor de autenticacion externa.")
-    System_Ext(gemini, "Google Gemini 1.5 Flash", "LLM para el asistente financiero IA y traduccion de comercios.")
-    System_Ext(push, "Web Push API", "Notificaciones push al navegador/dispositivo movil.")
-    System_Ext(email, "Email (Resend)", "Envio de resumenes mensuales y alertas por correo.")
+    System_Ext(banco, "Banco", "Origen de los archivos Excel de extractos (Bancolombia inicialmente). En el futuro podria integrarse via API/Open Banking.")
 
-    Rel(usuario, financeReport, "Carga extractos, consulta dashboards, recibe alertas", "HTTPS")
-    Rel(admin, financeReport, "Gestiona plataforma y usuarios", "HTTPS")
-    Rel(financeReport, banco, "Importa archivo .xlsx", "Upload")
-    Rel(financeReport, googleAuth, "Autentica usuarios", "OAuth2 / OIDC")
-    Rel(financeReport, gemini, "Consulta NLP y clasificacion semantica", "HTTPS + API Key")
-    Rel(financeReport, push, "Envia notificaciones", "Web Push Protocol")
-    Rel(financeReport, email, "Envia correos transaccionales", "SMTP / API REST")
+    System_Ext(google_auth, "Google OAuth2", "Proveedor de autenticacion principal.")
+    System_Ext(ms_auth, "Microsoft OAuth2", "Proveedor de autenticacion alternativo.")
+    System_Ext(gemini, "Google Gemini", "LLM para asistente financiero con IA (RF08). Groq como fallback opcional.")
+    System_Ext(r2, "Cloudflare R2", "Almacenamiento S3-compatible para archivos Excel de extractos y reportes generados.")
+    System_Ext(sendgrid, "SendGrid / Resend", "Envio de emails transaccionales (recordatorios, resumenes mensuales).")
+    System_Ext(push, "Web Push (VAPID)", "Notificaciones push al navegador.")
+
+    Rel(usuario, finance_report, "Carga extractos (.xlsx), consulta dashboard, recibe alertas", "HTTPS")
+    Rel(banco, usuario, "Entrega extracto mensual", "Descarga/Email")
+    Rel(finance_report, google_auth, "Autentica usuario", "OAuth2 / OIDC")
+    Rel(finance_report, ms_auth, "Autentica usuario (opcional)", "OAuth2 / OIDC")
+    Rel(finance_report, r2, "Almacena y recupera archivos Excel, reportes", "S3 API")
+    Rel(finance_report, gemini, "Consultas en lenguaje natural, recomendaciones", "REST API")
+    Rel(finance_report, sendgrid, "Envia emails transaccionales", "SMTP / REST API")
+    Rel(finance_report, push, "Envia notificaciones push al navegador", "Web Push Protocol")
 ```
 
 ---
@@ -54,631 +60,453 @@ C4Context
 
 ```mermaid
 C4Container
-    title Finance Report — Diagrama de Contenedores
+    title Diagrama de contenedores — Finance Report
 
-    Person(usuario, "Usuario", "80% movil, 20% desktop")
+    Person(usuario, "Usuario", "Accede via navegador web")
 
-    System_Boundary(financeReport, "Finance Report") {
-        Container(webapp, "Web App", "Next.js 14, TypeScript", "SPA/PWA con Server-Side Rendering. Dashboard interactivo, carga de extractos, chat IA.")
-        Container(apiGateway, "API Gateway", "FastAPI, Python 3.12+", "REST API con OpenAPI 3.1. Puerta de entrada unica para frontend y futuras apps moviles.")
-        Container(extractProcessor, "Extract Processor", "Python, RabbitMQ Consumer", "Servicio asincrono que parsea archivos Excel, extrae transacciones y las persiste.")
-        Container(classificationService, "Classification Service", "Python, scikit-learn", "Motor de clasificacion hibrido: reglas deterministicas + ML con sentence-transformers.")
-        Container(aiService, "AI Service", "Python, Gemini SDK", "Asistente financiero IA. Function calling para consultas de datos. Traduccion de comercios.")
-        Container(notificationService, "Notification Service", "Python, RabbitMQ Consumer", "Despachador de notificaciones push y email basado en eventos de dominio.")
-        ContainerDb(postgres, "PostgreSQL 16", "Base de datos relacional", "Almacena usuarios, transacciones, categorias, presupuestos, sesiones de chat.")
-        ContainerDb(redis, "Redis 7", "Cache", "Cache de dashboards (TTL 60s), rate limiting, colas de trabajos.")
-        ContainerDb(rabbitmq, "RabbitMQ 3.13", "Message Broker", "Colas para procesamiento asincrono de extractos, notificaciones y eventos de dominio.")
-        ContainerDb(objectStorage, "Cloudflare R2", "Object Storage (S3-compatible)", "Almacenamiento de extractos Excel originales y reportes PDF generados.")
+    System_Boundary(fr, "Finance Report") {
+        Container(nginx, "Nginx", "Reverse Proxy + TLS termination", "Rutea trafico a frontend y backend, sirve estaticos")
+        Container(frontend, "Frontend SPA", "Next.js + TypeScript", "Interfaz de usuario mobile-first. SSR para SEO en landing page. PWA con service worker para notificaciones push.")
+        Container(backend, "Backend API", "Python 3.12 + FastAPI", "API REST asincrona. Clean Architecture + DDD. Comandos, queries, eventos de dominio.")
+        ContainerDb(postgres, "PostgreSQL", "16", "Base de datos relacional principal. Almacena usuarios, extractos, transacciones, categorias, presupuestos.")
+        ContainerDb(redis, "Redis", "7", "Cache de consultas frecuentes (dashboard). Cola de tareas asincronas (Celery/ARQ).")
+        Container(rabbitmq, "RabbitMQ", "3.13", "Broker de mensajeria para eventos de dominio entre bounded contexts.")
+        Container(worker, "Background Worker", "Python 3.12 + ARQ/Celery", "Procesamiento asincrono: parseo de extractos, clasificacion ML, generacion de reportes PDF/Excel.")
     }
 
-    System_Ext(gemini, "Google Gemini 1.5 Flash", "LLM")
-    System_Ext(googleAuth, "Google OAuth2", "Auth Provider")
+    System_Ext(r2, "Cloudflare R2", "Object Storage (S3-compatible)")
+    System_Ext(gemini, "Google Gemini", "LLM")
+    System_Ext(google_auth, "Google OAuth2", "Autenticacion")
 
-    Rel(usuario, webapp, "Usa la aplicacion", "HTTPS")
-    Rel(webapp, apiGateway, "API calls", "HTTPS + REST")
-    Rel(apiGateway, postgres, "Lectura/escritura", "SQL (async)")
-    Rel(apiGateway, redis, "Cache/Rate limit", "RESP")
-    Rel(apiGateway, rabbitmq, "Publica eventos", "AMQP")
-    Rel(rabbitmq, extractProcessor, "Consume extract.uploaded", "AMQP")
-    Rel(rabbitmq, classificationService, "Consume transacciones.nuevas", "AMQP")
-    Rel(rabbitmq, notificationService, "Consume eventos de dominio", "AMQP")
-    Rel(extractProcessor, postgres, "Persiste transacciones", "SQL (async)")
-    Rel(extractProcessor, objectStorage, "Guarda extracto original", "S3 API")
-    Rel(classificationService, postgres, "Actualiza categorias", "SQL (async)")
-    Rel(classificationService, gemini, "Embeddings semanticos", "HTTPS")
-    Rel(aiService, gemini, "NLP / Function calling", "HTTPS")
-    Rel(aiService, postgres, "Consulta datos para respuestas", "SQL (async)")
-    Rel(notificationService, webapp, "Web Push", "Web Push Protocol")
+    Rel(usuario, nginx, "HTTPS", "443")
+    Rel(nginx, frontend, "Proxy pass /", "3000")
+    Rel(nginx, backend, "Proxy pass /api/", "8000")
+    Rel(frontend, backend, "API calls", "HTTP/HTTPS")
+    Rel(backend, postgres, "Lectura/escritura ORM", "5432 (SQLAlchemy async)")
+    Rel(backend, redis, "Cache + sesiones", "6379")
+    Rel(backend, rabbitmq, "Publica eventos de dominio", "5672 (AMQP)")
+    Rel(worker, rabbitmq, "Consume eventos de dominio", "5672 (AMQP)")
+    Rel(worker, postgres, "Lectura/escritura", "5432")
+    Rel(worker, r2, "Sube reportes generados", "HTTPS (S3 API)")
+    Rel(backend, r2, "Subida/descarga de extractos Excel", "HTTPS (S3 API)")
+    Rel(backend, gemini, "Consultas asistente IA", "HTTPS")
+    Rel(backend, google_auth, "Validacion de tokens JWT", "HTTPS")
 ```
 
 ---
 
 ## 4. Topologia de servicios
 
-| # | Contenedor | Tipo | Puerto | Replicas | Recursos |
-|---|-----------|------|--------|----------|----------|
-| 1 | **WebApp** | Next.js SSR | 3000 | 1-2 | 1 OCPU, 2GB RAM (Oracle VM) |
-| 2 | **APIGateway** | FastAPI (ASGI) | 8000 | 2-4 | 1 OCPU, 2GB RAM c/u |
-| 3 | **PostgreSQL** | Database | 5432 | 1 (HA opcional) | Supabase free: 500MB |
-| 4 | **Redis** | Cache | 6379 | 1 | Upstash free: 256MB |
-| 5 | **RabbitMQ** | Message Broker | 5672, 15672 | 1 | 1 OCPU, 2GB RAM |
-| 6 | **ExtractProcessor** | Python Worker | — | 1-3 | 1 OCPU, 2GB RAM c/u |
-| 7 | **ClassificationService** | Python Worker | — | 1-2 | 1 OCPU, 2GB RAM c/u |
-| 8 | **AIService** | Python Worker/API | 8001 | 1-2 | 1 OCPU, 2GB RAM c/u |
-| 9 | **NotificationService** | Python Worker | — | 1 | 1 OCPU, 1GB RAM |
-| 10 | **ObjectStorage** | Cloudflare R2 | — | N/A | 10GB free |
+El sistema sigue una arquitectura **modular monolith** con bounded contexts bien delimitados, preparada para evolucionar a microservicios cuando la escala lo demande.
 
-**Colas RabbitMQ**:
+### 4.1 Modulos del backend (Clean Architecture)
 
-| Cola | Consumidor | Prioridad | DLQ |
-|------|-----------|-----------|-----|
-| `extract.uploaded` | ExtractProcessor | Alta | `extract.dlq` |
-| `transactions.new` | ClassificationService | Media | `transactions.dlq` |
-| `notifications.send` | NotificationService | Baja | `notifications.dlq` |
+```
+src/backend/
+├── src/
+│   ├── api/                    # Capa de presentacion (FastAPI routers, middlewares, DI)
+│   │   ├── main.py             # Entrypoint, configuracion de FastAPI
+│   │   ├── routes/
+│   │   │   ├── extracts.py     # POST /api/v1/extracts/upload
+│   │   │   ├── transactions.py
+│   │   │   ├── dashboard.py
+│   │   │   └── auth.py
+│   │   ├── middleware/
+│   │   │   ├── tenant.py       # Multi-tenant (extraccion de tenant_id)
+│   │   │   ├── error_handler.py
+│   │   │   └── observability.py
+│   │   └── dependencies.py     # FastAPI DI (repos, servicios)
+│   │
+│   ├── application/            # Capa de aplicacion (casos de uso, comandos, queries)
+│   │   ├── extracts/
+│   │   │   ├── commands.py     # CargarExtracto, ReemplazarExtracto
+│   │   │   ├── queries.py      # ObtenerExtractos, ConsultarEstadoCarga
+│   │   │   └── handlers.py     # Orquestacion de comandos
+│   │   ├── tarjetas/
+│   │   │   └── commands.py     # IdentificarTarjeta (feat-002)
+│   │   └── eventos.py          # Publicadores de eventos de dominio
+│   │
+│   ├── domain/                 # Capa de dominio (entidades, VOs, eventos, repos interfaces)
+│   │   ├── extracto/
+│   │   │   ├── entities.py     # Extracto (AggregateRoot)
+│   │   │   ├── value_objects.py # PeriodoFacturacion, ArchivoR2Key
+│   │   │   ├── eventos.py      # ExtractoCreado, ExtractoDuplicadoDetectado
+│   │   │   ├── exceptions.py   # ExtractoDuplicadoException
+│   │   │   └── repository.py   # ExtractoRepository (interfaz)
+│   │   ├── tarjeta/
+│   │   │   ├── entities.py     # Tarjeta
+│   │   │   └── repository.py   # TarjetaRepository (interfaz)
+│   │   ├── transaccion/
+│   │   │   └── entities.py     # Transaccion
+│   │   └── categoria/
+│   │       └── entities.py     # Categoria
+│   │
+│   ├── infrastructure/         # Capa de infraestructura (implementaciones concretas)
+│   │   ├── persistence/
+│   │   │   ├── models.py       # SQLAlchemy ORM models
+│   │   │   ├── repositories/   # Implementaciones de repositorios
+│   │   │   └── unit_of_work.py
+│   │   ├── storage/
+│   │   │   └── r2_client.py    # Cliente S3 para Cloudflare R2
+│   │   ├── parsing/
+│   │   │   ├── bancolombia.py  # Parser especifico de extractos Bancolombia
+│   │   │   └── base.py         # Interfaz base para parsers (multi-banco)
+│   │   ├── llm/
+│   │   │   └── gemini_client.py
+│   │   ├── auth/
+│   │   │   └── oauth2.py       # Google OAuth2, Microsoft OAuth2, JWT
+│   │   ├── messaging/
+│   │   │   └── rabbitmq.py     # Publicador/consumidor de eventos
+│   │   └── observability/
+│   │       ├── logging.py      # Configuracion structlog/logging
+│   │       ├── metrics.py      # Prometheus metrics
+│   │       └── tracing.py      # OpenTelemetry tracing
+│   │
+│   └── shared/                 # Kernel compartido
+│       ├── base_entity.py      # AggregateRoot, Entity, ValueObject base
+│       ├── domain_event.py     # DomainEvent base
+│       └── exceptions.py       # DomainException base
+│
+├── tests/
+│   ├── unit/
+│   │   ├── domain/
+│   │   ├── application/
+│   │   └── infrastructure/
+│   ├── integration/
+│   │   ├── api/
+│   │   └── persistence/
+│   └── features/               # BDD (pytest-bdd)
+│       └── extracto/
+│           └── upload_extracto.feature
+│
+├── alembic/                    # Migraciones de base de datos
+├── alembic.ini
+├── requirements.txt
+├── pyproject.toml
+└── Dockerfile
+```
+
+### 4.2 Bounded Contexts
+
+| Bounded Context | Responsabilidad | Agregados |
+|-----------------|-----------------|-----------|
+| **Carga de Extractos** | Subida, parseo, validacion y persistencia de extractos bancarios | Extracto (Aggregate Root), Tarjeta, Transaccion |
+| **Clasificacion** (roadmap) | Categorizacion automatica y manual de transacciones, aprendizaje por correccion | Transaccion, Categoria, ReglaClasificacion |
+| **Dashboard** (roadmap) | Agregacion y visualizacion de datos financieros | — (contexto de lectura/query) |
+| **Habitos** (roadmap) | Deteccion de patrones, alertas, score de salud financiera | Alerta, Habito |
+| **Presupuestos** (roadmap) | Definicion y seguimiento de presupuestos por categoria | Presupuesto |
+| **Notificaciones** (roadmap) | Envio de push/email, recordatorios de pago, alertas | Notificacion |
+| **Identidad y Auth** | Autenticacion OAuth2, gestion de tokens JWT, multi-tenant | Usuario, Tenant |
+
+### 4.3 Comunicacion entre bounded contexts
+
+- **Sincrona (mismo bounded context)**: Llamadas directas en memoria (Clean Architecture)
+- **Asincrona (entre bounded contexts)**: Eventos de dominio publicados en RabbitMQ
+- **Integracion**: Patron event-driven. Cada bounded context publica eventos de dominio que otros contextos pueden consumir.
+
+```
+┌──────────────┐    ExtractoCreado     ┌──────────────┐
+│   Carga      │ ────────────────────► │ Clasificacion│
+│   Extractos  │                       │              │
+└──────┬───────┘                       └──────┬───────┘
+       │                                      │
+       │ ExtractoCreado                TransaccionClasificada
+       │                                      │
+       ▼                                      ▼
+┌──────────────┐                       ┌──────────────┐
+│  Dashboard   │◄──────────────────────│   Habitos    │
+│              │   DatosAgregados      │              │
+└──────────────┘                       └──────────────┘
+```
 
 ---
 
 ## 5. Stack tecnologico
 
+> **Importante**: Esta tabla es la fuente unica de verdad para el stack tecnologico. Todos los agentes subsiguientes (`design`, `scaffold`, `develop`, `test`, `quality`, `deploy`) leen esta seccion para adaptar su comportamiento.
+
 | Capa | Tecnologia | Version | Justificacion |
 |------|-----------|---------|---------------|
-| Lenguaje backend | Python | 3.12+ | Mejor ecosistema para Excel (openpyxl/pandas) y ML (scikit-learn/sentence-transformers) |
-| Framework API | FastAPI | latest | Alto rendimiento async, OpenAPI automatico, validacion Pydantic v2 |
-| Lenguaje frontend | TypeScript | 5.x | Type safety, mejor DX que JavaScript puro |
-| Framework frontend | Next.js (App Router) | 14+ | SSR/SSG, PWA-ready, optimizado para Vercel |
-| ORM | SQLAlchemy 2.0 + Alembic | latest | ORM maduro con async/await, migraciones robustas |
-| Base de datos | PostgreSQL 16 | 16 | NUMERIC para precision financiera, 500MB free en Supabase |
-| Cache | Redis 7 | 7 | Cache de dashboards 60s TTL, 256MB free en Upstash |
-| Mensajeria | RabbitMQ | 3.13 | Auto-gestionado en Oracle VM, 3 colas + DLQ |
-| LLM | Google Gemini 1.5 Flash | latest | 1,500 req/dia gratis, mejor espanol + function calling |
-| Excel parsing | openpyxl + pandas | latest | Parseo robusto de estructuras complejas multi-banco |
-| ML | scikit-learn + sentence-transformers | latest | Embeddings semanticos de nombres de comercio |
-| Testing backend | pytest + pytest-asyncio | latest | Async testing nativo, fixtures potentes |
-| Testing frontend | Vitest | latest | Rapido, compatible con Vite/Next.js |
-| Logging backend | structlog | latest | Logging estructurado, integracion OpenTelemetry |
-| Logging frontend | Winston | latest | Logging estandar en Node.js |
-| Contenedores | Docker | latest | Containerizacion estandar |
-| Orquestacion | Kubernetes (Oracle OKE) | latest | Managed K8s con nodos ARM gratuitos |
-| CI/CD | GitHub Actions | — | 2,000 min/mes free, integracion nativa |
-| Observabilidad | OpenTelemetry + Grafana Cloud | latest | 10K metricas free, 50GB logs, 14d retencion |
-| Almacenamiento | Cloudflare R2 (S3-compatible) | — | 10GB free, sin egress fees |
-| Despliegue frontend | Vercel | Hobby | 100GB bandwidth, deploy automatico, previews por rama |
-| Despliegue backend | Oracle Cloud VM Ampere A1 | Always Free | 4 OCPU ARM, 24GB RAM, 200GB disco |
+| Lenguaje | Python | 3.12+ | Seleccionado por el equipo. Ecosistema maduro para data processing, parsing y ML. |
+| Runtime | CPython | 3.12+ | Runtime estandar, compatible con todas las dependencias del ecosistema. |
+| Framework Backend | FastAPI | | Framework async de alto rendimiento para APIs REST. Validacion automatica con Pydantic, OpenAPI/Swagger integrado, soporte nativo para dependency injection. |
+| Framework Frontend | Next.js | | Framework React full-stack. SSR para SEO en landing page, SSG para paginas estaticas, API routes para BFF. Mobile-first con diseño responsivo. |
+| Lenguaje Frontend | TypeScript | | Tipado estatico para frontend, mejor mantenibilidad y DX que JavaScript puro. |
+| ORM | SQLAlchemy | 2.0+ | ORM asincrono con soporte nativo para async/await. Mapeo de modelos de dominio a tablas PostgreSQL. Migraciones con Alembic. |
+| Base de datos | PostgreSQL | 16 | Base de datos relacional con soporte robusto para JSON, window functions para analitica, constraints de unicidad, y extensiones PostGIS (futuro). |
+| Almacenamiento | Cloudflare R2 | | Almacenamiento S3-compatible para archivos Excel de extractos. Zero egress fees, mas economico que AWS S3 para cargas frecuentes de lectura. |
+| Cache | Redis | 7 | Cache de consultas de dashboard (IDistributedCache-like). Backend para colas de tareas asincronas (ARQ/Celery). |
+| Mensajeria | RabbitMQ | 3.13 | Broker AMQP para eventos de dominio entre bounded contexts. Gestionado via libreria pika o aio-pika. Amplia adopcion, confiable. |
+| Migraciones | Alembic | | Herramienta de migraciones para SQLAlchemy. Versionado de esquema de base de datos. |
+| Background Jobs | ARQ / Celery | | Procesamiento asincrono: parseo de extractos, clasificacion ML, generacion de reportes. Redis como backend de colas. |
+| Testing | pytest + pytest-bdd | | Framework de testing estandar en el ecosistema Python. pytest-bdd para criterios de aceptacion en Gherkin. pytest-asyncio para tests asincronos. |
+| Mocking | pytest-mock + factory_boy | | Fixtures de fabrica para datos de prueba realistas. |
+| Logging | structlog | | Logging estructurado con salida JSON. Facil integracion con OpenTelemetry y agregadores de logs (Loki, ELK). |
+| Contenedores | Docker | | Multi-stage builds. Imagenes separadas para backend (FastAPI), frontend (Next.js), y worker (ARQ/Celery). |
+| Orquestacion | Docker Compose | | Orquestacion local para desarrollo. Servicios: backend, frontend, postgres, redis, rabbitmq. |
+| CI/CD | GitHub Actions | | Integracion nativa con repositorio GitHub. Pipelines para linting, testing, build, y deploy. |
+| Observabilidad | OpenTelemetry + Prometheus + Grafana | | Stack estandar CNCF. Tracing distribuido (OTLP), metricas (Prometheus), dashboards (Grafana). |
+| LLM / IA | Google Gemini (gemini-1.5-flash) | | Asistente financiero con IA (RF08). Groq como fallback opcional. Bajo costo, alta disponibilidad. |
+| Auth | OAuth2 (Google + Microsoft) + JWT | | Autenticacion federada con proveedores externos. Tokens JWT para sesiones stateless. 2FA opcional via TOTP. |
+| Email | Resend / SendGrid | | Envio de emails transaccionales: recordatorios de pago, resumenes mensuales. |
+| Push Notifications | Web Push (VAPID) | | Notificaciones push al navegador. Service worker en el frontend para recepcion. |
 
 ---
 
 ## 6. ADR — Architecture Decision Records
 
-### ADR-001: Clean Architecture con separacion en capas
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: El sistema necesita una arquitectura mantenible, testeable y que permita evolucionar independientemente las capas de dominio, aplicacion, infraestructura y presentacion.
-**Decision**: Adoptar Clean Architecture con 4 capas estrictamente separadas: Dominio (entidades, value objects, interfaces), Aplicacion (casos de uso, DTOs, servicios de aplicacion), Infraestructura (persistencia, mensajeria, servicios externos), y Presentacion (API REST, Web App). Las dependencias solo apuntan hacia adentro (Dominio no depende de nada externo).
-**Consecuencias**:
-- Positivas: Alta testeabilidad (dominio sin dependencias), facilidad para cambiar infraestructura (ej. cambiar PostgreSQL por otro motor), desacoplamiento claro.
-- Negativas: Mayor cantidad de archivos/proyectos iniciales, curva de aprendizaje para desarrolladores nuevos, posible sobre-ingenieria para casos de uso simples.
+### ADR-001: Stack tecnologico para Finance Report
 
-### ADR-002: Arquitectura cloud-native con auto-scaling para picos dia 1-5 del mes
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: El 80% de las cargas de extractos ocurren en los primeros 5 dias del mes (fechas de corte). El sistema debe escalar automaticamente en esos picos y reducirse el resto del mes para minimizar costos.
-**Decision**: Desplegar en Kubernetes (Oracle OKE) con HorizontalPodAutoscaler basado en CPU y longitud de cola RabbitMQ. Configurar minReplicas=1 y maxReplicas=4 para servicios de procesamiento. Usar Oracle Cloud Always Free (4 OCPU ARM, 24GB RAM) como unico nodo worker, con posibilidad de escalar a nodos adicionales bajo demanda.
-**Consecuencias**:
-- Positivas: Costo $0/mes en infraestructura base, escalado automatico en picos, alta disponibilidad.
-- Negativas: Complejidad operativa de Kubernetes, limitacion a 4 OCPU en free tier (puede ser insuficiente con muchos usuarios), vendor lock-in moderado con Oracle Cloud.
+- **Estado**: Aceptado
+- **Fecha**: 2026-07-04
+- **Contexto**:
 
-### ADR-003: Motor de clasificacion hibrido (reglas deterministicas + ML para aprendizaje)
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: Las transacciones bancarias tienen nombres de comercio no amigables (ej. "DLO*DIDI FOOD CO PAYIN"). Se necesita un motor de clasificacion preciso que mejore con el tiempo mediante aprendizaje de correcciones del usuario.
-**Decision**: Implementar un motor hibrido en dos fases: (1) Reglas deterministicas con palabras clave y expresiones regulares para clasificacion inicial (~80% precision), (2) ML con sentence-transformers para embeddings semanticos de nombres de comercio, re-clasificando basado en similitud coseno con correcciones previas del usuario. La confianza se calcula como umbral de similitud: alta (>0.9), media (0.7-0.9), baja (<0.7).
-**Consecuencias**:
-- Positivas: Alta precision inicial con reglas, mejora continua con feedback del usuario, bajo costo computacional (modelos pre-entrenados).
-- Negativas: Complejidad de mantener dos subsistemas de clasificacion, necesidad de re-entrenar embeddings periodicamente, latencia adicional por llamada a Gemini para embeddings.
+  Se requiere definir el stack tecnologico completo para Finance Report, un SaaS multi-tenant de carga y analisis de extractos bancarios. El sistema involucra:
+  - Procesamiento de archivos Excel (parsing, validacion)
+  - API REST asincrona con Clean Architecture + DDD
+  - Frontend SPA mobile-first
+  - Componente de IA para asistente financiero
+  - Procesamiento asincrono (clasificacion ML, generacion de reportes)
+  - Almacenamiento de archivos (extractos Excel, reportes PDF/Excel)
 
-### ADR-004: Mobile-first responsive design (80% uso movil)
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: El 80% de las consultas y cargas se realizaran desde dispositivos moviles. Los dashboards deben ser completamente funcionales en pantallas pequenas.
-**Decision**: Adoptar un enfoque mobile-first con Next.js App Router, Tailwind CSS para diseño responsive, y componentes optimizados para touch (graficos con Chart.js + react-chartjs-2). La web app se comporta como PWA (Progressive Web App) con soporte offline para consulta de datos cacheados, instalable en home screen, y Web Push API para notificaciones.
-**Consecuencias**:
-- Positivas: Experiencia nativa en movil sin necesidad de desarrollar apps separadas (iOS/Android), menor costo de desarrollo y mantenimiento, actualizaciones inmediatas.
-- Negativas: Limitaciones de PWA en iOS (push notifications limitados), rendimiento de graficos complejos en dispositivos de gama baja, no disponible en App Store/Play Store.
+  El proyecto ya existia con features completadas (feat-001: scaffolding, feat-002: identificacion de tarjeta) usando el stack definido en la fase de diseno inicial.
 
-### ADR-005: Procesamiento asincrono de extractos via RabbitMQ
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: El parseo de extractos Excel puede ser intensivo en CPU (archivos grandes, estructuras complejas multi-banco). No debe bloquear la respuesta HTTP al usuario.
-**Decision**: El API Gateway acepta la carga del archivo, lo almacena en Cloudflare R2, publica un mensaje en la cola `extract.uploaded`, y retorna inmediatamente un `202 Accepted` con un `trackingId`. El ExtractProcessor consume el mensaje, parsea el Excel, persiste las transacciones, y publica `transactions.new` para el ClassificationService. El frontend sondea el estado via `GET /api/extracts/{trackingId}/status` o recibe un evento SSE cuando termina.
-**Consecuencias**:
-- Positivas: Respuesta inmediata al usuario, procesamiento desacoplado, reintentos automaticos via DLQ, escalado independiente del worker de parseo.
-- Negativas: Complejidad de gestionar estados asincronos en el frontend, latencia adicional por el paso por RabbitMQ, necesidad de monitorear colas y DLQ.
+- **Decision**:
 
-### ADR-006: API-first design — REST API consumida por frontend y futura app movil
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: La aplicacion tendra inicialmente un frontend web (Next.js), pero en el futuro se preve una app movil nativa (React Native o Flutter). La API debe ser reutilizable por cualquier cliente.
-**Decision**: Diseñar la API siguiendo el enfoque API-first: contratos OpenAPI 3.1 generados automaticamente por FastAPI, autenticacion via JWT (OAuth2 con Google), versionado en la URL (`/api/v1/...`), y HATEOAS minimo para descubrimiento de recursos. El frontend Next.js consume la API como un cliente mas, sin logica de negocio acoplada.
-**Consecuencias**:
-- Positivas: API reutilizable por cualquier cliente, documentacion automatica (Swagger UI + ReDoc), testing de contratos independiente, facilidad para onboardear nuevos desarrolladores.
-- Negativas: Overhead de llamadas HTTP adicionales (no hay server-side data fetching directo desde Next.js a BD), latencia de red, necesidad de mantener backward compatibility.
+  Se adopta el siguiente stack tecnologico completo:
 
-### ADR-007: PostgreSQL para integridad de datos financieros
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: Los datos financieros requieren precision decimal exacta, integridad referencial, y consultas agregadas complejas (sumatorias, promedios, comparativas mes a mes). No se pueden permitir errores de redondeo.
-**Decision**: Usar PostgreSQL 16 como base de datos principal. Aprovechar el tipo NUMERIC(precision, scale) para montos financieros, constraints CHECK para validar reglas de negocio (ej. montos no negativos en gastos), indices parciales para consultas frecuentes (transacciones por usuario + periodo), y window functions para calculos de tendencias y promedios moviles. Supabase como hosting (500MB free).
-**Consecuencias**:
-- Positivas: Precision decimal garantizada (a diferencia de FLOAT), integridad referencial estricta, ecosistema maduro de migraciones (Alembic), funciones de agregacion avanzadas.
-- Negativas: Escalabilidad vertical limitada en Supabase free (500MB), no es tan flexible para datos no estructurados como MongoDB, requiere tuning de indices para dashboards complejos.
+  **Backend**:
+  - Python 3.12+ con FastAPI como framework API (async, alto rendimiento)
+  - SQLAlchemy 2.0+ como ORM asincrono con Alembic para migraciones
+  - Clean Architecture + Domain-Driven Design como patron arquitectonico
+  - PostgreSQL 16 como base de datos relacional principal
+  - RabbitMQ 3.13 como broker de mensajeria para eventos de dominio
+  - ARQ/Celery con Redis como backend para procesamiento asincrono
 
-### ADR-008: Estrategia de branching Git Flow
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: El proyecto necesita una estrategia de branching clara que permita desarrollo paralelo de features, releases estables, y hotfixes rapidos.
-**Decision**: Adoptar Git Flow con ramas: `main` (produccion), `develop` (integracion), `feature/{id}-{slug}` (desarrollo de features), `release/{version}` (preparacion de releases), `hotfix/{id}-{slug}` (correcciones urgentes). Cada feature se desarrolla en su propia rama y se integra via Pull Request a `develop` con revision de codigo.
-**Consecuencias**:
-- Positivas: Flujo de trabajo predecible, separacion clara entre desarrollo y produccion, facilidad para hotfixes, compatible con GitHub Actions y Vercel previews.
-- Negativas: Overhead de gestion de ramas para equipos pequeños, posibles conflictos de merge frecuentes en `develop`, latencia entre merge y despliegue.
+  **Frontend**:
+  - Next.js con TypeScript para SPA mobile-first
+  - PWA con service worker para notificaciones push
 
-### ADR-009: Stack tecnologico (Python/FastAPI + TypeScript/Next.js, infra $0/mes)
-**Estado**: Aceptado
-**Fecha**: 2026-06-02
-**Contexto**: Se requiere definir el stack tecnologico completo que equilibre productividad del desarrollador, ecosistema adecuado para el dominio (Excel, ML, NLP en espanol), y costo de infraestructura cercano a $0/mes para un MVP bootstrapped.
-**Decision**: Backend en Python 3.12+ con FastAPI (mejor ecosistema para openpyxl/pandas y ML). Frontend en TypeScript con Next.js 14+ (SSR/SSG, PWA, deploy gratuito en Vercel Hobby). PostgreSQL 16 en Supabase (500MB free). Redis 7 en Upstash (256MB free). RabbitMQ auto-gestionado en Oracle Cloud VM Ampere A1 (4 OCPU, 24GB RAM, Always Free). Google Gemini 1.5 Flash como LLM (1,500 req/dia gratis). Cloudflare R2 para almacenamiento (10GB free, sin egress). Observabilidad con Grafana Cloud free tier.
-**Consecuencias**:
-- Positivas: Costo de infraestructura $0/mes para MVP y baja escala (<100 usuarios activos), ecosistema Python lider en data science y Excel parsing, Next.js + Vercel ofrecen el mejor DX para frontend con deploy automatico, PostgreSQL garantiza integridad de datos financieros.
-- Negativas: Stack heterogeneo (Python + TypeScript) requiere desarrolladores full-stack o dos perfiles, Oracle Cloud Always Free tiene limitaciones (ARM, recursos compartidos, sin SLA), Supabase free tier solo 500MB (requiere migracion al crecer), RabbitMQ auto-gestionado requiere mantenimiento operativo.
+  **Infraestructura y DevOps**:
+  - Docker con multi-stage builds
+  - Docker Compose para orquestacion en desarrollo
+  - Cloudflare R2 como almacenamiento S3-compatible de archivos
+  - GitHub Actions para CI/CD
+  - OpenTelemetry + Prometheus + Grafana para observabilidad
+
+  **Integraciones externas**:
+  - Google Gemini como LLM principal para asistente IA
+  - OAuth2 (Google + Microsoft) para autenticacion federada
+  - Resend/SendGrid para emails transaccionales
+
+- **Justificacion**:
+
+  - **Python/FastAPI**: Elegido sobre TypeScript/Node.js y C#/.NET por el ecosistema superior en data processing/parsing (pandas, openpyxl), ML/NLP para clasificacion de transacciones y asistente IA, y productividad del desarrollador (Pydantic, async nativo). FastAPI ofrece rendimiento comparable a Node.js con mejor soporte para validacion automatica de schemas.
+  - **SQLAlchemy 2.0+**: ORM maduro con soporte async nativo en su version 2.0, mejor integracion con PostgreSQL que alternativas como Prisma (que prioriza TypeScript).
+  - **Clean Architecture + DDD**: Separacion clara de concerns, testeabilidad, y alineacion con el lenguaje ubicuo del dominio financiero. Los bounded contexts permiten evolucionar a microservicios en el futuro.
+  - **PostgreSQL 16**: Soporte robusto para constraints de unicidad (critico para deduplicacion feat-003), window functions para analitica financiera, y extensiones como PostGIS si se requiere en el futuro.
+  - **Cloudflare R2**: Zero egress fees — critico para un SaaS donde los usuarios descargan frecuentemente sus reportes. API S3-compatible facilita la migracion futura a AWS S3 si fuera necesario.
+  - **RabbitMQ**: Mas ligero y simple que Kafka para el volumen actual de eventos de dominio. Amplia adopcion y tooling en el ecosistema Python.
+  - **Next.js + TypeScript**: SSR para SEO en landing page, SSG para paginas estaticas, API routes para BFF si se necesita. TypeScript proporciona tipado estatico y mejor DX que JavaScript.
+  - **Docker Compose**: Adecuado para la fase actual de desarrollo. Se considerara Kubernetes cuando se necesite orquestacion en produccion multi-nodo.
+
+- **Alternativas consideradas**:
+  - TypeScript/Node.js (Next.js full-stack) — Descartado: ecosistema de data processing/ML inferior a Python.
+  - C#/.NET — Descartado: el equipo y las features implementadas ya estan en Python.
+  - Kafka en vez de RabbitMQ — Descartado: overkill para el volumen actual de eventos. RabbitMQ es mas simple de operar.
+  - MongoDB en vez de PostgreSQL — Descartado: los datos son altamente relacionales (extractos, transacciones, categorias, usuarios).
+  - AWS S3 en vez de Cloudflare R2 — Descartado: costos de egress mas altos para descarga frecuente de reportes.
+
+- **Consecuencias**:
+  - **Positivas**:
+    - Ecosistema Python optimo para procesamiento de archivos Excel y ML/NLP
+    - Clean Architecture permite evolucionar modulos a microservicios cuando sea necesario
+    - Docker Compose simplifica el desarrollo local y el onboarding de nuevos desarrolladores
+    - R2 reduce costos operativos de almacenamiento y descarga
+  - **Negativas**:
+    - Dos lenguajes en el stack (Python backend + TypeScript frontend) aumenta la carga cognitiva
+    - SQLAlchemy async requiere cuidado con lazy loading y session management
+    - Docker Compose no escala a produccion multi-nodo (requiere migrar a Kubernetes en el futuro)
+  - **Riesgos**:
+    - El volumen de eventos de dominio podria superar la capacidad de RabbitMQ si el sistema crece significativamente
+    - La dependencia de Google Gemini requiere un plan de contingencia si la API cambia o se depreca
+
+---
+
+### ADR-002: Patron arquitectonico — Clean Architecture + Domain-Driven Design
+
+- **Estado**: Aceptado
+- **Fecha**: 2026-07-04
+- **Contexto**:
+
+  Finance Report es un sistema con un dominio financiero rico: reglas de negocio complejas (validacion de unicidad de extractos, clasificacion de transacciones, deteccion de patrones de gasto), multiples bounded contexts (carga de extractos, clasificacion, dashboard, habitos, presupuestos), y un lenguaje ubicuo bien definido (extracto, periodo de facturacion, transaccion, cuota, abono, categoria).
+
+  El sistema necesita ser:
+  - **Testeable**: Las reglas de negocio deben ser verificables sin infraestructura externa.
+  - **Mantenible**: El dominio evolucionara con nuevas reglas (ej. soporte para nuevos bancos, nuevos tipos de transaccion).
+  - **Modular**: Cada bounded context debe poder evolucionar independientemente.
+  - **Preparado para escalar**: La arquitectura debe permitir extraer bounded contexts como microservicios en el futuro.
+
+- **Decision**:
+
+  Se adopta **Clean Architecture** como patron arquitectonico principal, combinado con principios tacticos de **Domain-Driven Design**:
+
+  - **Capas de Clean Architecture**:
+
+    | Capa | Responsabilidad | Dependencias |
+    |------|-----------------|--------------|
+    | **Domain** | Entidades, Value Objects, Agregados, Eventos de dominio, Interfaces de repositorio | Ninguna (capa mas interna) |
+    | **Application** | Casos de uso (comandos, queries, handlers), Orquestacion, DTOs | Domain |
+    | **Infrastructure** | Persistencia (SQLAlchemy), Storage (R2), Parsing (Bancolombia), Auth (OAuth2), Mensajeria (RabbitMQ), LLM (Gemini) | Domain, Application |
+    | **API** | Routers FastAPI, Middlewares, Dependency Injection, Serializacion/Deserializacion | Application, Infrastructure |
+
+  - **Principios tacticos de DDD**:
+    - **Agregados**: Extracto como Aggregate Root para el bounded context de Carga de Extractos
+    - **Value Objects**: PeriodoFacturacion, ArchivoR2Key, DetallesTarjeta (inmutables, sin identidad)
+    - **Domain Events**: ExtractoCreado, ExtractoDuplicadoDetectado, TransaccionClasificada
+    - **Repositorios**: Interfaces en Domain, implementaciones en Infrastructure (patron Repository)
+    - **Bounded Contexts**: Separacion logica con eventos de dominio como mecanismo de integracion
+
+- **Justificacion**:
+
+  - **Clean Architecture sobre Vertical Slices**: Vertical Slices mezcla logica de negocio con infraestructura, lo que dificulta la separacion de concerns en un dominio financiero con reglas complejas. Clean Architecture aísla el dominio, facilitando el testing unitario y la evolucion de la infraestructura sin afectar la logica de negocio.
+  - **DDD sobre CRUD simple**: El dominio financiero tiene reglas ricas (BN-01 a BN-10) que no se pueden modelar como simple CRUD. DDD proporciona el lenguaje y los patrones para capturar esta complejidad.
+  - **Modular Monolith sobre Microservicios desde el inicio**: Los microservicios introducen complejidad operativa (red, consistencia eventual, distributed tracing) que no se justifica en la fase actual. Clean Architecture con bounded contexts permite extraer modulos a microservicios cuando la escala lo demande.
+
+- **Consecuencias**:
+  - **Positivas**:
+    - Dominio aislado y testeable: las reglas de negocio se prueban sin base de datos ni HTTP
+    - Evolucion independiente de bounded contexts via eventos de dominio
+    - Preparado para extraer modulos como microservicios (strangler fig pattern)
+  - **Negativas**:
+    - Mayor cantidad de archivos y capas comparado con arquitecturas mas planas (Vertical Slices, Fat Models)
+    - Curva de aprendizaje para desarrolladores sin experiencia en DDD
+    - Overhead de mapeo entre capas (entidades de dominio ↔ modelos ORM ↔ DTOs)
+
+---
+
+### ADR-003: Estrategia de autenticacion — OAuth2 federado con JWT stateless
+
+- **Estado**: Aceptado
+- **Fecha**: 2026-07-04
+- **Contexto**:
+
+  Finance Report es un SaaS multi-tenant que requiere autenticacion de usuarios. Los requerimientos (RF no funcionales, seccion 4 de requirements.md) especifican: OAuth2 con Google/Microsoft, 2FA opcional (TOTP), y encriptacion de datos financieros (AES-256 en reposo, TLS 1.3 en transito).
+
+  Considerando que los usuarios acceden principalmente desde movil (80%), la solucion debe ser frictionless y no requerir credenciales adicionales.
+
+- **Decision**:
+
+  Se adopta autenticacion federada via OAuth2 con Google (principal) y Microsoft (alternativo), complementada con tokens JWT stateless para sesiones de API:
+
+  - **Autenticacion**: Google OAuth2 como proveedor principal, Microsoft OAuth2 como opcion secundaria
+  - **Autorizacion**: JWT (HS256 en desarrollo, RS256 en produccion) con claims: `sub`, `tenant_id`, `email`, `exp`, `iat`
+  - **Sesiones**: Stateless. Access token (30 min) + Refresh token (30 dias)
+  - **2FA**: Opcional via TOTP (RFC 6238)
+  - **Encriptacion**: AES-256 para datos financieros en reposo, TLS 1.3 en transito
+
+- **Consecuencias**:
+  - Reduccion de friccion en onboarding (los usuarios ya tienen cuenta de Google)
+  - Sin responsabilidad de almacenar/rotar passwords
+  - JWT stateless simplifica la escalabilidad horizontal (no sticky sessions)
+  - Dependencia externa: indisponibilidad de Google OAuth2 bloquea el login
 
 ---
 
 ## 7. Patrones transversales
 
-### Autenticacion y autorizacion
-
-- **OAuth2 / OIDC** con Google como proveedor unico inicial. Flujo Authorization Code + PKCE.
-- **JWT** (access token + refresh token). Access token 15min TTL, refresh token 7 dias (rotacion incluida).
-- **Roles**: `user` (default), `admin` (gestion de plataforma).
-- **2FA opcional** via TOTP (a implementar en v1.1).
-- Middleware de autenticacion en API Gateway que valida JWT en cada request.
-- CSRF protection via SameSite=Strict cookies + token en header.
-
-### Comunicacion entre servicios (sync/async)
+### 7.1 Autenticacion y autorizacion
 
 ```
-Cliente ──HTTPS/REST──▶ API Gateway ──SQL──▶ PostgreSQL
-                            │                   
-                            ├──AMQP──▶ RabbitMQ ──▶ ExtractProcessor ──▶ PostgreSQL
-                            │                         ClassificationService ──▶ PostgreSQL  
-                            │                         NotificationService
-                            │
-                            ├──HTTPS──▶ AIService ──▶ Gemini API
-                            │
-                            └──SSE◀── (streaming de eventos al frontend)
+Cliente ──► GET /api/v1/auth/login/google ──► FastAPI ──► Google OAuth2
+                                                     ◄── token ID
+           ◄── JWT (access + refresh) ──── FastAPI
+
+Cliente ──► GET /api/v1/extracts
+           Authorization: Bearer <JWT> ──► Middleware ──► Verifica JWT
+                                           TenantMiddleware ──► Extrae tenant_id
 ```
 
-- **Sincrono**: REST entre WebApp y API Gateway, API Gateway y AIService. SQL directo desde API Gateway a PostgreSQL.
-- **Asincrono**: RabbitMQ para procesamiento de extractos, clasificacion, y notificaciones.
-- **Streaming**: Server-Sent Events (SSE) para progreso de carga de extractos y notificaciones en tiempo real.
-- **Web Push**: NotificationService → navegador para alertas push.
+- **Flujo**: OAuth2 Authorization Code Grant con PKCE
+- **Tokens**: JWT firmado, stateless. Access token (30 min), Refresh token (30 dias)
+- **Middleware**: `TenantMiddleware` extrae `tenant_id` del JWT y lo inyecta en el contexto de la request
+- **Encriptacion de datos financieros**: AES-256-GCM. Clave por tenant almacenada en vault (futuro: HashiCorp Vault o AWS KMS)
 
-### Manejo de errores y resiliencia
+### 7.2 Comunicacion entre servicios (sync/async)
 
-- **Circuit Breaker** con `tenacity` en llamadas a servicios externos (Gemini, email).
-- **Retry con backoff exponencial** en consumidores RabbitMQ (max 3 reintentos, luego DLQ).
-- **Problem Details (RFC 7807)** para respuestas de error en API Gateway.
-- **Correlation ID** propagado en todas las capas (header `X-Correlation-ID`).
-- **Graceful degradation**: si el servicio de IA no esta disponible, el chat muestra mensaje de indisponibilidad pero el resto de la app funciona.
-- **Health checks**: `/health` (liveness) y `/health/ready` (readiness) en todos los servicios.
+- **Sincrona**: REST sobre HTTP/1.1 entre frontend y backend. FastAPI routers en el mismo proceso para bounded contexts.
+- **Asincrona**: RabbitMQ (AMQP 0-9-1) para eventos de dominio entre bounded contexts.
+  - **Publicacion**: Capa de aplicacion publica eventos tras operaciones exitosas
+  - **Consumo**: Workers (ARQ/Celery) o suscriptores en otros bounded contexts
+  - **Garantia de entrega**: At-least-once. Idempotency keys en consumidores.
 
-### Logging y observabilidad
+### 7.3 Manejo de errores y resiliencia
 
-- **Logging estructurado**: `structlog` en backend, `Winston` en frontend. Formato JSON con campos: timestamp, level, logger, correlation_id, user_id, message, extra.
-- **Trazabilidad distribuida**: OpenTelemetry SDK con propagacion de contexto via W3C Trace Context.
-- **Metricas**: Prometheus metrics expuestas en `/metrics` (contadores de requests, latencia, tasa de errores, transacciones procesadas).
-- **Dashboards**: Grafana Cloud con dashboards predefinidos para salud de servicios, trafico API, y metricas de negocio (cargas por dia, precision de clasificacion).
-- **Alertas**: Configuradas en Grafana Cloud para errores 5xx > 5%, latencia p99 > 2s, y colas DLQ con mensajes acumulados.
+- **Errores de dominio**: `DomainException` con codigos de error semanticos (ej. `EXTRACTO_DUPLICADO`)
+- **Mapeo a HTTP**: Middleware global captura `DomainException` y mapea a status codes:
+  - `ExtractoDuplicadoException` → 409 Conflict
+  - `TarjetaNoEncontradaException` → 404 Not Found
+  - `ValidacionFallidaException` → 422 Unprocessable Entity
+- **Circuit Breaker**: (futuro) patron circuit breaker para llamadas a servicios externos (Gemini, R2, OAuth2)
+- **Retry**: Backoff exponencial con jitter para operaciones idempotentes (subida a R2)
+- **Safety net**: Constraints de base de datos como ultima linea de defensa ante race conditions (ej. `uq_extracto_tarjeta_periodo`)
 
-### Estrategia de testing
+### 7.4 Logging y observabilidad
 
-| Nivel | Herramienta | Cobertura objetivo | Enfoque |
-|-------|------------|-------------------|---------|
-| **Unitario** | pytest + pytest-asyncio | > 80% dominio y aplicacion | TDD con ciclo RED-GREEN-REFACTOR. Una carpeta por clase, un archivo por metodo. |
-| **Integracion** | pytest + TestContainers (PostgreSQL, Redis) | > 60% infraestructura | Probar repositorios, consumidores RabbitMQ, y servicios externos mockeados. |
-| **Contract** | schema validation (OpenAPI) | API Gateway | Validar que respuestas cumplen el esquema OpenAPI. |
-| **E2E** | Playwright | Smoke tests criticos | Flujos principales: login → cargar extracto → ver dashboard → clasificar transaccion. |
-| **BDD** | pytest-bdd (Gherkin) | Criterios de aceptacion | Feature files para historias de usuario complejas (ej. deteccion de suscripciones fantasma). |
+- **Logging estructurado**: `structlog` con salida JSON. Campos estandar:
+  - `timestamp`, `level`, `logger`, `message`
+  - `tenant_id`, `user_id`, `correlation_id` (trazabilidad)
+  - `event_type` (para eventos de dominio)
+- **Tracing**: OpenTelemetry auto-instrumentation para FastAPI, SQLAlchemy, Redis, RabbitMQ
+  - Propagation de `trace_id` y `span_id` via headers HTTP y headers AMQP
+- **Metricas**: Prometheus metrics endpoint (`/metrics`)
+  - Contadores: `extractos_cargados_total`, `extractos_duplicados_total`, `transacciones_clasificadas_total`
+  - Histogramas: `carga_extracto_duracion_segundos`, `parseo_excel_duracion_segundos`
+  - Gauges: `extractos_por_procesar`, `cola_eventos_tamano`
+- **Health checks**: Endpoint `/health` con checks de:
+  - PostgreSQL connectivity (`SELECT 1`)
+  - Redis connectivity (`PING`)
+  - RabbitMQ connectivity
+  - R2 connectivity (head bucket)
+
+### 7.5 Estrategia de testing
+
+| Nivel | Herramienta | Alcance | Cobertura esperada |
+|-------|------------|--------|-------------------|
+| **Unitarios** | pytest + pytest-mock | Capa de dominio (entidades, VOs, reglas de negocio) | > 90% |
+| **Integracion** | pytest + TestContainers (postgres) | Repositorios, casos de uso, handlers | > 80% |
+| **API (e2e)** | pytest + httpx (TestClient de FastAPI) | Endpoints REST, middlewares, serializacion | Happy paths + edge cases |
+| **Aceptacion (BDD)** | pytest-bdd (Gherkin) | Criterios de aceptacion definidos en features | Un .feature por caso de uso |
+| **Frontend** | Vitest + React Testing Library | Componentes, hooks, servicios, paginas | > 80% |
+
+- **TDD**: Ciclo RED-GREEN-REFACTOR obligatorio para nueva funcionalidad (skill `tdd`)
+- **BDD**: Criterios de aceptacion en Gherkin antes de implementar (skill `bdd`)
+- **CI**: Tests unitarios + integracion en cada push. BDD en cada PR hacia `develop`.
 
 ---
 
 ## 8. Restricciones tecnicas
 
-| Categoria | Restriccion | Detalle |
-|-----------|------------|---------|
-| **Seguridad** | Encriptacion de datos en reposo | AES-256 para datos financieros. PostgreSQL TDE si el proveedor lo soporta. |
-| **Seguridad** | Encriptacion en transito | TLS 1.3 para todas las comunicaciones externas. mTLS para comunicaciones entre servicios en el cluster. |
-| **Seguridad** | Datos de tarjeta | Solo almacenar ultimos 4 digitos del numero de tarjeta. NUNCA almacenar CVV, fecha de expiracion, ni PIN. |
-| **Seguridad** | Cumplimiento de datos | Los datos financieros son de consumo personal. No se comparten con terceros sin consentimiento explicito del usuario. |
-| **Rendimiento** | Carga de extracto | < 3 segundos para archivo de ~150 filas (parseo sincrono inicial). Procesamiento asincrono total < 10 segundos. |
-| **Rendimiento** | Dashboard | < 1 segundo para carga inicial de KPIs y graficos. Usar Redis cache con TTL de 60s. |
-| **Rendimiento** | Clasificacion automatica | < 500ms para clasificar ~70 transacciones. |
-| **Escalabilidad** | Picos de uso | Soportar 10x trafico en dias 1-5 del mes sin degradacion. Auto-scaling via HPA en Kubernetes. |
-| **Escalabilidad** | Usuarios concurrentes | Soportar 50 usuarios simultaneos en MVP, 500+ en v1.0. |
-| **Portabilidad** | Multi-banco | El sistema debe soportar extractos de al menos 3 bancos colombianos (Bancolombia, Davivienda, BBVA) con diferentes formatos de Excel. |
-| **Portabilidad** | Migracion de datos | Exportacion/importacion de datos historicos en formato estandar (CSV, JSON) para cambio de banco/tarjeta. |
-| **Usabilidad** | Mobile-first | UI responsive con diseño adaptativo. PWA instalable. Touch-friendly en graficos. |
-| **Usabilidad** | Onboarding | Tutorial interactivo con extracto de ejemplo precargado. No requiere registro para demo. |
-| **Internacionalizacion** | i18n | Inicialmente espanol (es-CO, es-MX, es-AR). Preparado para ingles (en-US) y portugues (pt-BR) en v2.0. |
-| **Disponibilidad** | Uptime | 99.5% (max 3.65h downtime/mes). La carga de extractos es critica 1 vez al mes por usuario. |
+| Restriccion | Descripcion | Fundamento |
+|-------------|-------------|------------|
+| **Multi-tenant** | Todos los datos se particionan por `tenant_id`. Queries siempre filtradas. | Aislamiento de datos entre tenants. Preparado para futura facturacion por tenant. |
+| **Nunca almacenar numero completo de tarjeta** | Solo se almacenan los ultimos 4 digitos. El numero enmascarado del extracto (****7681) se extrae pero no se persiste completo. | Cumplimiento de seguridad (PCI-DSS). Requerimiento no funcional. |
+| **Parseo configurable por banco** | Cada banco tiene su propia implementacion de parser. Interfaz comun `BaseParser` con metodo `parse(file: bytes) -> ExtractoParseado`. | Extensibilidad para soportar Davivienda, BBVA y otros bancos colombianos. |
+| **Idempotencia de carga de extractos** | La operacion de carga debe ser idempotente: mismo archivo + mismo periodo = 409 Conflict. | BN-DUP-01, feat-003. Evita duplicados y gasto innecesario de recursos. |
+| **Sin dependencia de sistema de archivos local** | Los archivos Excel se procesan en memoria o via streams. El unico almacenamiento persistente es R2. | Escalabilidad horizontal (stateless). Compatible con entornos efimeros (Kubernetes pods). |
+| **TLS 1.3 en transito** | Toda comunicacion externa debe usar TLS 1.3 como minimo. | Requerimiento de seguridad. |
+| **Health checks obligatorios** | Todo servicio debe exponer endpoint `/health` con checks de sus dependencias. | Orquestacion (Docker healthcheck, Kubernetes liveness/readiness probes). |
 
 ---
 
-## 9. Contratos API
+## 9. Roadmap arquitectonico
 
-### Resumen de endpoints por recurso
-
-| Recurso | Metodos | Endpoints principales | Descripcion |
-|---------|---------|----------------------|-------------|
-| **Auth** | POST | `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout` | Autenticacion OAuth2 con Google. Manejo de tokens JWT. |
-| **Usuarios** | GET, PATCH, DELETE | `/api/v1/users/me`, `/api/v1/users/me/preferences` | Perfil del usuario autenticado, preferencias de notificacion y configuracion. |
-| **Tarjetas** | GET, POST, PATCH, DELETE | `/api/v1/cards`, `/api/v1/cards/{id}` | Gestion de tarjetas de credito asociadas al usuario. Ultimos 4 digitos, alias, banco. |
-| **Extractos** | POST, GET, DELETE | `/api/v1/extracts/upload`, `/api/v1/extracts`, `/api/v1/extracts/{id}`, `/api/v1/extracts/{id}/status` | Carga y consulta de extractos. Status para tracking asincrono. |
-| **Transacciones** | GET, PATCH | `/api/v1/transactions`, `/api/v1/transactions/{id}`, `/api/v1/transactions/batch-classify` | Listado paginado con filtros (periodo, categoria, comercio). Clasificacion individual y masiva. |
-| **Categorias** | GET, POST, PATCH, DELETE | `/api/v1/categories`, `/api/v1/categories/{id}`, `/api/v1/categories/{id}/subcategories` | Categorias predefinidas y personalizadas del usuario. Subcategorias anidadas. |
-| **Dashboards** | GET | `/api/v1/dashboards/summary`, `/api/v1/dashboards/by-category`, `/api/v1/dashboards/daily`, `/api/v1/dashboards/monthly-trend`, `/api/v1/dashboards/treemap`, `/api/v1/dashboards/installments-projection`, `/api/v1/dashboards/heatmap` | Endpoints de datos agregados para cada visualizacion. Cache con Redis (60s TTL). |
-| **Presupuestos** | GET, POST, PATCH, DELETE | `/api/v1/budgets`, `/api/v1/budgets/{id}`, `/api/v1/budgets/{id}/progress` | Presupuestos por categoria. Calculo de progreso en tiempo real. |
-| **Metas de ahorro** | GET, POST, PATCH, DELETE | `/api/v1/savings-goals`, `/api/v1/savings-goals/{id}`, `/api/v1/savings-goals/{id}/projection` | Metas de ahorro con proyeccion de fecha de cumplimiento. |
-| **Alertas & Insights** | GET, PATCH | `/api/v1/insights`, `/api/v1/insights/{id}/dismiss`, `/api/v1/insights/health-score` | Alertas de malos habitos detectadas. Score de salud financiera. |
-| **Asistente IA** | POST, GET | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{id}/messages` (SSE disponible) | Sesiones de chat con el asistente financiero IA. Soporta streaming de respuestas via SSE. |
-| **Comercios** | GET, POST | `/api/v1/merchants/translate`, `/api/v1/merchants/suggest` | Traduccion de nombres de comercio. Sugerencias colaborativas. |
-| **Reportes** | POST, GET | `/api/v1/reports/generate`, `/api/v1/reports/{id}/download` | Generacion asincrona de reportes PDF/Excel. Descarga cuando estan listos. |
-| **Notificaciones** | GET, PATCH | `/api/v1/notifications`, `/api/v1/notifications/{id}/read`, `/api/v1/notifications/preferences` | Bandeja de notificaciones. Preferencias de canal (push/email). |
-
-### Ejemplo de contrato: Carga de extracto
-
-```
-POST /api/v1/extracts/upload
-Content-Type: multipart/form-data
-Authorization: Bearer <JWT>
-
-Body:
-  file: extracto_mayo_2026.xlsx
-  card_id: "card_abc123"
-
-Response 202:
-{
-  "tracking_id": "ext_track_xyz789",
-  "status": "processing",
-  "status_url": "/api/v1/extracts/ext_track_xyz789/status",
-  "estimated_seconds": 5
-}
-```
-
-### Ejemplo de contrato: Dashboard summary
-
-```
-GET /api/v1/dashboards/summary?card_id=card_abc123&period=2026-05
-Authorization: Bearer <JWT>
-
-Response 200:
-{
-  "period": {"start": "2026-05-15", "end": "2026-05-18", "cutoff_date": "2026-05-18"},
-  "kpis": {
-    "total_spent_cop": 8543500.00,
-    "total_income": 1200000.00,
-    "avg_daily_spent": 284783.33,
-    "cupo_utilization_pct": 42.7,
-    "days_until_cutoff": 16,
-    "variation_vs_previous_month_pct": -8.3
-  },
-  "previous_period_kpis": { ... }
-}
-```
-
----
-
-## 10. Modelo de datos conceptual
-
-### Entidades principales (13 entidades)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           FINANCE REPORT — MODELO DE DATOS                   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────┐       ┌──────────────┐       ┌──────────────┐
-│   Usuario    │1─────*│   Tarjeta    │1─────*│  Extracto    │
-│              │       │              │       │              │
-│ id           │       │ id           │       │ id           │
-│ email        │       │ last_4_digits│       │ periodo_start│
-│ name         │       │ alias        │       │ periodo_end  │
-│ avatar_url   │       │ bank_name    │       │ cutoff_date  │
-│ preferences  │       │ cupo_total   │       │ due_date     │
-│ created_at   │       │ created_at   │       │ pago_total   │
-│ updated_at   │       │ updated_at   │       │ pago_minimo  │
-└──────────────┘       └──────────────┘       │ cupo_total   │
-       │                                       │ cupo_dispon  │
-       │                                       │ status       │
-       │                                       │ created_at   │
-       │                                       └──────┬───────┘
-       │                                              │1
-       │                                              │
-       │                                              *│
-       │                                       ┌──────┴───────┐
-       │                                       │ Transaccion  │
-       │                                       │              │
-       │                                       │ id           │
-       │                                       │ auth_number  │
-       │                                       │ date         │
-       │                                       │ description  │
-       │                                       │ amount_cop   │
-       │                                       │ amount_orig  │
-       │                                       │ currency_orig│
-       │                                       │ cuotas_total │
-       │                                       │ cuota_actual │
-       │                                       │ cuota_valor  │
-       │                                       │ interes_mens │
-       │                                       │ interes_anual│
-       │                                       │ saldo_pend   │
-       │                                       │ is_installment│
-       │                                       │ confidence   │
-       │                                       └──────┬───────┘
-       │                                              │*
-       │                                              │
-       │                                     ┌────────┴────────┐
-       │                              ┌──────┴───────┐  ┌──────┴──────┐
-       │                              │   Categoria  │  │ Subcategoria│
-       │                              │              │  │              │
-       │                              │ id           │  │ id           │
-       │                              │ name         │  │ name         │
-       │                              │ icon         │  │ categoria_id │
-       │                              │ color        │  │ created_at   │
-       │                              │ is_default   │  └──────────────┘
-       │                              │ user_id (FK) │
-       │                              │ created_at   │
-       │                              └──────────────┘
-       │
-       │       ┌──────────────┐       ┌──────────────┐
-       │       │ Presupuesto  │       │ MetaAhorro   │
-       │       │              │       │              │
-       │       │ id           │       │ id           │
-       │       │ categoria_id │       │ name         │
-       │       │ monto_limite │       │ target_amount│
-       │       │ periodo      │       │ current_amount│
-       │       │ user_id (FK) │       │ target_date  │
-       │       │ created_at   │       │ user_id (FK) │
-       │       │ updated_at   │       │ created_at   │
-       │       └──────────────┘       └──────────────┘
-       │
-       │       ┌──────────────┐       ┌──────────────────┐
-       │       │Traduccion    │       │  Notificacion    │
-       │       │Comercio      │       │                  │
-       │       │              │       │ id               │
-       │       │ id           │       │ user_id          │
-       │       │ original_name│       │ type             │
-       │       │ translated   │       │ title            │
-       │       │ confidence   │       │ body             │
-       │       │ is_approved  │       │ data (JSON)      │
-       │       │ suggested_by │       │ is_read          │
-       │       │ created_at   │       │ channel          │
-       │       └──────────────┘       │ created_at       │
-       │                              └──────────────────┘
-       │
-       │       ┌──────────────────┐    ┌──────────────────┐
-       │       │ SesionChat       │    │ MensajeChat      │
-       │       │                  │    │                  │
-       │       │ id               │    │ id               │
-       │       │ user_id          │    │ sesion_id        │
-       │       │ title            │    │ role (user/ai)   │
-       │       │ created_at       │    │ content          │
-       │       │ updated_at       │    │ chart_data (JSON)│
-       │       └──────────────────┘    │ created_at       │
-       │                               └──────────────────┘
-       │
-       │       ┌──────────────────────┐
-       │       │ NotificacionPrefer   │
-       │       │                      │
-       │       │ id                   │
-       │       │ user_id              │
-       │       │ payment_reminder     │
-       │       │ large_transaction    │
-       │       │ weekly_summary       │
-       │       │ budget_alert         │
-       │       │ habit_alert          │
-       │       │ cutoff_reminder      │
-       │       │ monthly_summary      │
-       │       └──────────────────────┘
-       │
-       ▼
-    (Relaciones no mostradas por claridad)
-```
-
-### Relaciones clave
-
-| Origen | Destino | Cardinalidad | Descripcion |
-|--------|---------|-------------|-------------|
-| Usuario | Tarjeta | 1:N | Un usuario puede tener multiples tarjetas |
-| Tarjeta | Extracto | 1:N | Una tarjeta tiene un extracto por periodo |
-| Extracto | Transaccion | 1:N | Un extracto contiene N transacciones |
-| Transaccion | Categoria | N:1 | Cada transaccion pertenece a una categoria |
-| Categoria | Subcategoria | 1:N | Una categoria tiene multiples subcategorias |
-| Transaccion | Subcategoria | N:1 | Cada transaccion puede tener subcategoria (nullable) |
-| Usuario | Presupuesto | 1:N | Presupuestos personalizados por usuario |
-| Usuario | MetaAhorro | 1:N | Metas de ahorro por usuario |
-| Usuario | SesionChat | 1:N | Historial de sesiones del asistente IA |
-| SesionChat | MensajeChat | 1:N | Mensajes dentro de una sesion de chat |
-| Usuario | TraduccionComercio | 1:N | Sugerencias de traduccion por usuario |
-| Usuario | Notificacion | 1:N | Notificaciones recibidas por el usuario |
-| Usuario | NotificacionPreferencia | 1:1 | Preferencias de notificacion por usuario |
-
----
-
-## 11. Patrones de integracion
-
-### REST sincrono (API Gateway ↔ WebApp)
-
-- Contratos definidos en OpenAPI 3.1, generados automaticamente por FastAPI.
-- Autenticacion via `Authorization: Bearer <JWT>` en cada request.
-- Rate limiting: 100 req/min por usuario, 20 req/min en endpoints de escritura.
-- Paginacion: cursor-based para listados de transacciones (evita offset en datasets grandes).
-- Versionado: `/api/v1/...` en URL.
-
-### RabbitMQ asincrono (API Gateway → Workers)
-
-| Evento | Publicador | Consumidor | Formato |
-|--------|-----------|------------|---------|
-| `extract.uploaded` | API Gateway | ExtractProcessor | `{ "tracking_id": "...", "file_key": "...", "card_id": "...", "user_id": "..." }` |
-| `transactions.new` | ExtractProcessor | ClassificationService | `{ "extract_id": "...", "transaction_ids": [...], "user_id": "..." }` |
-| `notification.send` | ClassificationService, API Gateway | NotificationService | `{ "user_id": "...", "type": "budget_alert", "title": "...", "body": "...", "data": {...} }` |
-| `insight.detected` | ClassificationService | API Gateway (SSE relay) | `{ "user_id": "...", "insight_type": "subscription_ghost", "payload": {...} }` |
-
-### SSE streaming (API Gateway → WebApp)
-
-- Endpoint: `GET /api/v1/events/stream` (autenticado).
-- Eventos: `extract.progress`, `insight.detected`, `notification.new`, `budget.threshold`.
-- Formato: `text/event-stream` con campos `id`, `event`, `data`.
-- Reconexion automatica con `Last-Event-ID`.
-
-### Web Push (NotificationService → Navegador)
-
-- NotificationService genera notificaciones push via Web Push API.
-- El frontend registra un Service Worker que recibe y muestra notificaciones incluso con la app cerrada (PWA instalada).
-- VAPID keys generadas por servidor, public key compartida con el frontend.
-
----
-
-## 12. Roadmap arquitectonico
-
-### Fase 1 — MVP (Junio 2026)
-- [x] Definicion de arquitectura y stack tecnologico
-- [x] ADRs fundacionales (9 ADRs aceptados)
-- [ ] Scaffolding de monorepo (backend Python + frontend Next.js)
-- [ ] API Gateway con endpoints core: auth, carga de extracto, CRUD transacciones
-- [ ] Parseo de extracto Excel para formato Bancolombia
-- [ ] Motor de clasificacion por reglas deterministicas (14 categorias)
-- [ ] Dashboard basico: KPIs, donut por categoria, grafico de barras diario
-- [ ] Infraestructura serverless en Oracle Cloud Always Free + Supabase + Vercel
-- [ ] CI/CD con GitHub Actions
-- [ ] PWA basica instalable
-
-### Fase 2 — v1.0 (Julio 2026)
-- [ ] Procesamiento asincrono completo con RabbitMQ
-- [ ] Clasificacion hibrida con ML (sentence-transformers)
-- [ ] Dashboards completos: treemap, heatmap, proyeccion de cuotas, tendencia mensual
-- [ ] Presupuestos por categoria y metas de ahorro
-- [ ] Alertas de malos habitos (todas las 8)
-- [ ] Notificaciones push y email
-- [ ] Traduccion de comercios colaborativa
-- [ ] Asistente IA basico con Gemini (chat + function calling)
-- [ ] Soporte multi-banco (Davivienda, BBVA)
-- [ ] Exportacion de reportes PDF y Excel
-- [ ] Onboarding con extracto de ejemplo
-
-### Fase 3 — v1.1 (Agosto 2026)
-- [ ] Simulador "que pasaria si"
-- [ ] Score de salud financiera con historico
-- [ ] Comparativa social anonimizada (benchmarking)
-- [ ] 2FA via TOTP
-- [ ] Multi-moneda avanzada (tasas de cambio historicas)
-- [ ] App movil nativa (React Native) — fase inicial
-- [ ] Webhooks para integracion con bancos (Open Banking)
-
-### Fase 4 — v2.0 (Septiembre+ 2026)
-- [ ] Soporte multi-idioma (ingles, portugues)
-- [ ] Integracion directa con APIs bancarias (Open Banking Colombia)
-- [ ] Recomendaciones de productos financieros (afiliacion)
-- [ ] Modo colaborativo familiar (presupuesto compartido)
-- [ ] Escalado horizontal a multi-region
-- [ ] Migracion de Supabase a PostgreSQL dedicado (mayor capacidad)
-- [ ] Certificacion de seguridad (ISO 27001, PCI DSS nivel basico)
-
----
-
-## 13. Diagrama de despliegue (infraestructura)
-
-```mermaid
-graph TB
-    subgraph "Usuario"
-        Browser["Navegador Movil/Desktop<br/>PWA Instalable"]
-    end
-
-    subgraph "Vercel (Hobby)"
-        Frontend["Next.js SSR<br/>Web App + Service Worker"]
-    end
-
-    subgraph "Oracle Cloud VM Ampere A1 (Always Free)"
-        subgraph "Kubernetes (Oracle OKE)"
-            APIGateway["API Gateway<br/>FastAPI :8000"]
-            ExtractWorker["Extract Processor<br/>Python Worker"]
-            ClassWorker["Classification Service<br/>Python Worker"]
-            AIWorker["AI Service<br/>FastAPI :8001"]
-            NotifWorker["Notification Service<br/>Python Worker"]
-            RabbitMQ["RabbitMQ 3.13<br/>:5672 :15672"]
-        end
-    end
-
-    subgraph "Supabase (Free)"
-        PostgreSQL["PostgreSQL 16<br/>:5432"]
-    end
-
-    subgraph "Upstash (Free)"
-        Redis["Redis 7<br/>:6379"]
-    end
-
-    subgraph "Cloudflare R2 (Free)"
-        ObjectStore["Object Storage<br/>S3-Compatible"]
-    end
-
-    subgraph "Externos"
-        Gemini["Google Gemini 1.5 Flash"]
-        GoogleAuth["Google OAuth2"]
-        EmailProvider["Resend (Email)"]
-        GrafanaCloud["Grafana Cloud<br/>Observabilidad"]
-    end
-
-    Browser -->|"HTTPS"| Frontend
-    Frontend -->|"REST + SSE"| APIGateway
-    APIGateway -->|"SQL"| PostgreSQL
-    APIGateway -->|"RESP"| Redis
-    APIGateway -->|"AMQP"| RabbitMQ
-    RabbitMQ -->|"AMQP"| ExtractWorker
-    RabbitMQ -->|"AMQP"| ClassWorker
-    RabbitMQ -->|"AMQP"| NotifWorker
-    ExtractWorker -->|"SQL"| PostgreSQL
-    ExtractWorker -->|"S3 API"| ObjectStore
-    ClassWorker -->|"SQL"| PostgreSQL
-    ClassWorker -->|"HTTPS"| Gemini
-    AIWorker -->|"HTTPS"| Gemini
-    AIWorker -->|"SQL"| PostgreSQL
-    NotifWorker -->|"Web Push"| Browser
-    NotifWorker -->|"SMTP"| EmailProvider
-    APIGateway -->|"OTLP"| GrafanaCloud
-    APIGateway -->|"OAuth2"| GoogleAuth
-
-    style Frontend fill:#000000,color:#fff
-    style PostgreSQL fill:#336791,color:#fff
-    style RabbitMQ fill:#FF6600,color:#fff
-    style Redis fill:#DC382D,color:#fff
-```
-
----
-
-## 14. Glosario de arquitectura
-
-| Termino | Definicion |
-|---------|-----------|
-| **Clean Architecture** | Patron arquitectonico con capas concentricas donde el dominio es el centro y no depende de nada externo. |
-| **ADR** | Architecture Decision Record. Documento que captura una decision arquitectonica importante, su contexto, y consecuencias. |
-| **PWA** | Progressive Web App. Aplicacion web que se comporta como una app nativa (instalable, offline, push notifications). |
-| **SSE** | Server-Sent Events. Tecnologia que permite al servidor enviar eventos en tiempo real al cliente sobre HTTP. |
-| **AMQP** | Advanced Message Queuing Protocol. Protocolo usado por RabbitMQ para mensajeria asincrona. |
-| **DLQ** | Dead Letter Queue. Cola donde se envian mensajes que no pudieron ser procesados tras N reintentos. |
-| **HPA** | Horizontal Pod Autoscaler. Mecanismo de Kubernetes para escalar replicas basado en metricas. |
-| **OTLP** | OpenTelemetry Protocol. Protocolo para enviar telemetria (traces, metrics, logs) a colectores. |
-| **VAPID** | Voluntary Application Server Identification. Estandar para autenticar servidores de Web Push. |
-| **JWT** | JSON Web Token. Token de autenticacion que transporta claims firmados digitalmente. |
-| **TOTP** | Time-based One-Time Password. Algoritmo para generar codigos 2FA basados en tiempo. |
-| **Function Calling** | Capacidad de LLMs para invocar funciones definidas por el desarrollador y usar sus resultados en la respuesta. |
-| **Embeddings semanticos** | Representacion vectorial de texto que captura su significado semantico, permitiendo comparacion por similitud coseno. |
-| **S3-compatible** | API de almacenamiento de objetos compatible con el estandar de Amazon S3. |
-| **Always Free** | Tier gratuito de Oracle Cloud que incluye recursos de por vida (no solo periodo de prueba). |
+| Fase | Hito | Descripcion | Impacto arquitectonico |
+|------|------|-------------|----------------------|
+| **Actual** | feat-003 completado | Prevencion de extractos duplicados con respuesta 409 Conflict | Nuevo evento de dominio `ExtractoDuplicadoDetectado`. Safety net con constraint BD. |
+| **Siguiente** | feat-004 | Reemplazo de extractos duplicados (BN-01: "ofrecer reemplazar el existente") | Optimizacion: mover subida a R2 despues del pre-flight check. |
+| **Mediano plazo** | Clasificacion (RF02) | Motor de reglas + ML para categorizacion de transacciones | Nuevo bounded context `Clasificacion`. Evento `TransaccionClasificada`. Pipeline de ML (scikit-learn / spaCy). |
+| **Mediano plazo** | Dashboard (RF03) | Graficos interactivos, KPIs financieros, drill-down | Contexto de lectura (CQRS). Vistas materializadas en PostgreSQL. Cache Redis. |
+| **Largo plazo** | Multi-banco | Parsers para Davivienda, BBVA, y otros bancos colombianos | Nuevas implementaciones de `BaseParser`. Registro via factory pattern o plugin system. |
+| **Largo plazo** | Escalamiento a microservicios | Extraer bounded contexts como servicios independientes | API Gateway (Kong/Traefik). Service mesh (Istio/Linkerd). Kubernetes en produccion. |
+| **Largo plazo** | IA Assistant (RF08) | Chat con lenguaje natural, recomendaciones proactivas | Integracion Gemini + RAG con datos financieros del usuario. Streaming de respuestas (SSE). |

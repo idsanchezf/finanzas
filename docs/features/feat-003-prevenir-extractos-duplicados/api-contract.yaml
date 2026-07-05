@@ -1,0 +1,282 @@
+openapi: "3.0.3"
+info:
+  title: "Finance Report — Extracts API"
+  description: "API REST para carga de extractos bancarios. Feature feat-003: prevención de duplicados."
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8000
+    description: Desarrollo local (Docker Compose)
+
+paths:
+  /api/v1/extracts/upload:
+    post:
+      summary: Cargar un extracto bancario
+      description: |
+        Sube un archivo Excel (.xlsx) de extracto bancario, lo parsea, identifica la tarjeta,
+        valida que no sea duplicado y persiste las transacciones.
+
+        **Flujo**:
+        1. Subir archivo a Cloudflare R2
+        2. Parsear Excel (extraer periodo, transacciones, últimos 4 dígitos)
+        3. Identificar tarjeta (feat-002: find-or-create por banco + últimos 4 dígitos)
+        4. **Pre-flight check de duplicado (feat-003)**: buscar extracto existente por tarjeta + periodo
+        5. Si NO es duplicado → persistir extracto + transacciones → 201 Created
+        6. Si ES duplicado → emitir evento de dominio → 409 Conflict
+
+        **Idempotencia**: Mismo archivo + misma tarjeta + mismo periodo = 409 Conflict.
+      operationId: uploadExtract
+      tags:
+        - Extractos
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - banco_id
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    Archivo Excel (.xlsx) del extracto bancario.
+                    Debe contener: periodo de facturación, transacciones (fecha, descripción, monto).
+                    Tamaño máximo: 10 MB.
+                banco_id:
+                  type: string
+                  format: uuid
+                  description: ID del banco emisor (ej. Bancolombia)
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "201":
+          description: Extracto cargado exitosamente. Flujo normal sin duplicado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractoResponse"
+              example:
+                extracto_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                tarjeta_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                periodo_inicio: "2026-05-01"
+                periodo_fin: "2026-05-31"
+                banco: "Bancolombia"
+                ultimos_4_digitos: "7681"
+                total_transacciones: 45
+                created_at: "2026-07-04T15:30:00Z"
+        "409":
+          description: |
+            Extracto duplicado — ya existe un extracto para la misma tarjeta + periodo.
+
+            **Dos casos**:
+            1. Pre-flight check lo detecta (95%): `extracto_id` contiene el ID del extracto existente
+            2. Race condition — constraint BD lo detecta (5%): `extracto_id` es null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractoDuplicadoError"
+              examples:
+                preFlight:
+                  summary: Duplicado detectado en pre-flight check
+                  value:
+                    error: "EXTRACTO_DUPLICADO"
+                    message: "El extracto para la tarjeta 7681 periodo 2026-05-01 a 2026-05-31 ya existe"
+                    extracto_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    tarjeta_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    periodo_inicio: "2026-05-01"
+                    periodo_fin: "2026-05-31"
+                raceCondition:
+                  summary: Race condition capturada por constraint BD
+                  value:
+                    error: "EXTRACTO_DUPLICADO"
+                    message: "Conflicto de concurrencia: el extracto fue creado por otra solicitud simultánea"
+                    extracto_id: null
+                    tarjeta_id: null
+                    periodo_inicio: null
+                    periodo_fin: null
+        "422":
+          description: El archivo Excel no tiene un formato reconocible para el banco especificado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidacionError"
+              example:
+                error: "VALIDACION_FALLIDA"
+                message: "El archivo no contiene un formato de extracto reconocible para Bancolombia"
+                detalles:
+                  razon: "No se pudo extraer el periodo de facturación"
+                  columna_esperada: "periodo_facturado"
+                  filas_procesadas: 0
+        "404":
+          description: No se pudo identificar la tarjeta a partir del extracto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "TARJETA_NO_ENCONTRADA"
+                message: "No se pudo identificar la tarjeta con últimos 4 dígitos '7681' para el banco 'Bancolombia'"
+        "401":
+          description: Token JWT inválido, expirado o no proporcionado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "NO_AUTENTICADO"
+                message: "Token JWT inválido o expirado"
+        "403":
+          description: El usuario no tiene permisos para realizar esta operación.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "PERMISO_DENEGADO"
+                message: "No tienes permisos para cargar extractos en este tenant"
+        "413":
+          description: El archivo excede el tamaño máximo permitido (10 MB).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "ARCHIVO_MUY_GRANDE"
+                message: "El archivo excede el tamaño máximo de 10 MB"
+        "500":
+          description: Error interno inesperado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "ERROR_INTERNO"
+                message: "Error interno del servidor"
+
+components:
+  schemas:
+    ExtractoResponse:
+      type: object
+      required:
+        - extracto_id
+        - tarjeta_id
+        - banco
+        - total_transacciones
+        - created_at
+      properties:
+        extracto_id:
+          type: string
+          format: uuid
+          description: ID único del extracto creado
+        tarjeta_id:
+          type: string
+          format: uuid
+          description: ID de la tarjeta asociada
+        periodo_inicio:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de inicio del periodo de facturación (null si no detectable)
+        periodo_fin:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de fin del periodo de facturación (null si no detectable)
+        banco:
+          type: string
+          description: Nombre del banco emisor
+        ultimos_4_digitos:
+          type: string
+          pattern: '^\d{4}$'
+          description: Últimos 4 dígitos de la tarjeta
+        total_transacciones:
+          type: integer
+          minimum: 0
+          description: Número de transacciones procesadas en el extracto
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp UTC de creación del extracto
+
+    ExtractoDuplicadoError:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - EXTRACTO_DUPLICADO
+          description: Código de error semántico
+        message:
+          type: string
+          description: Mensaje descriptivo para el usuario
+        extracto_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            ID del extracto ya existente.
+            - Caso pre-flight check: contiene el UUID del extracto duplicado
+            - Caso race condition: null (no se conoce porque lo creó otra transacción)
+        tarjeta_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID de la tarjeta asociada (null en race condition)
+        periodo_inicio:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de inicio del periodo duplicado (null en race condition)
+        periodo_fin:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de fin del periodo duplicado (null en race condition)
+
+    ValidacionError:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - VALIDACION_FALLIDA
+          description: Código de error semántico
+        message:
+          type: string
+          description: Mensaje descriptivo para el usuario
+        detalles:
+          type: object
+          additionalProperties: true
+          description: Detalles adicionales sobre la validación fallida (formato variable según el error)
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Código de error semántico (ej. NO_AUTENTICADO, PERMISO_DENEGADO, ERROR_INTERNO)
+        message:
+          type: string
+          description: Mensaje descriptivo para el usuario
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenido del endpoint de autenticación OAuth2.
+        Incluir en el header: `Authorization: Bearer <token>`

@@ -7,7 +7,7 @@ Los workers y otros servicios consumen estos eventos via RabbitMQ.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -142,6 +142,26 @@ class RecordatorioPendiente:
         return self.__class__.__name__
 
 
+@dataclass(frozen=True)
+class ExtractoDuplicadoDetectado:
+    """Se emite cuando se detecta un intento de cargar un extracto duplicado.
+
+    Es un evento informativo: no modifica estado, solo habilita
+    logging, metricas y notificaciones (feat-003).
+    """
+
+    extracto_id_existente: UUID
+    tarjeta_id: UUID
+    periodo_inicio: date | None = None
+    periodo_fin: date | None = None
+    event_id: UUID = field(default_factory=uuid4)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    @property
+    def event_name(self) -> str:
+        return self.__class__.__name__
+
+
 __all__ = [
     "DomainEvent",
     "ExtractoCargado",
@@ -151,4 +171,5 @@ __all__ = [
     "PresupuestoAlcanzado",
     "HabitoDetectado",
     "RecordatorioPendiente",
+    "ExtractoDuplicadoDetectado",
 ]

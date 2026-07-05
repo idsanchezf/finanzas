@@ -103,7 +103,7 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Error desconocido' }));
-      throw new ApiError(response.status, error.detail || 'Error en la solicitud');
+      throw new ApiError(response.status, error.detail || error.message || 'Error en la solicitud');
     }
 
     if (response.status === 204) {
@@ -214,14 +214,14 @@ class ApiClient {
           });
           if (!retryResponse.ok) {
             const error = await retryResponse.json().catch(() => ({ detail: 'Error al subir archivo' }));
-            throw new ApiError(retryResponse.status, error.detail || 'Error en la carga');
+            throw new ApiError(retryResponse.status, error.detail || error.message || 'Error en la carga');
           }
           return retryResponse.json();
         }
         throw new ApiError(401, 'Sesion expirada. Inicia sesion de nuevo.');
       }
       const error = await response.json().catch(() => ({ detail: 'Error al subir archivo' }));
-      throw new ApiError(response.status, error.detail || 'Error en la carga');
+      throw new ApiError(response.status, error.detail || error.message || 'Error en la carga');
     }
 
     return response.json();

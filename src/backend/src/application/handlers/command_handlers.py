@@ -6,6 +6,7 @@ servicios de dominio y publicando eventos al bus de mensajes.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from decimal import Decimal
 from typing import Any
@@ -19,11 +20,15 @@ from src.application.commands import (
     CrearMetaAhorroCommand,
     CrearPresupuestoCommand,
 )
+from sqlalchemy.exc import IntegrityError
+
 from src.domain.entities.categoria import Categoria
 from src.domain.entities.extracto import Extracto
 from src.domain.entities.meta_ahorro import MetaAhorro
 from src.domain.entities.presupuesto import Presupuesto
 from src.domain.entities.transaccion import Transaccion
+from src.domain.events import ExtractoDuplicadoDetectado
+from src.domain.exceptions import ExtractoDuplicadoException, ValidacionFallidaException
 from src.domain.repositories import (
     ICategoriaRepository,
     IExtractoRepository,
@@ -65,25 +70,60 @@ class CommandHandler:
         """Procesa la carga de un extracto bancario.
 
         Flujo completo:
-        1. Crea el extracto en estado PENDING y lo persiste.
-        2. Parsea el Excel con ExtractoExcelParser.
-        3. Actualiza metadatos del extracto (periodo, montos, fechas).
-        4. Crea transacciones a partir del parseo y las persiste.
-        5. Marca el extracto como COMPLETED si el parseo fue exitoso.
-        6. Publica evento ExtractoCargado para notificaciones asincronas.
+        1. Calcula file_hash SHA-256 del contenido del archivo.
+        2. Crea el extracto en estado PENDING (sin persistir aun).
+        3. Parsea el Excel con ExtractoExcelParser.
+        4. Fix #1: Persiste el extracto DESPUES del parseo (no antes).
+        5. Fix #2: Valida que los periodos sean detectables -> 422 si no.
+        6. Pre-flight check de duplicado (feat-003):
+           a. Chequeo por tarjeta + periodo exacto (BN-DUP-01).
+           b. Fix #3: Chequeo secundario por tarjeta + file_hash.
+        7. Crea transacciones a partir del parseo y las persiste.
+        8. Marca el extracto como COMPLETED si el parseo fue exitoso.
+        9. Publica evento ExtractoCargado para notificaciones asincronas.
         """
         from src.infrastructure.excel.parser import ExtractoExcelParser
 
-        # 1. Crear extracto en estado PENDING
+        # Fix #3: Calcular hash SHA-256 del archivo (deteccion de duplicados)
+        file_hash: str = hashlib.sha256(cmd.file_content).hexdigest()
+
+        # PRE-FLIGHT CHECK TEMPRANO por hash — antes de parsear el Excel
+        # Si el mismo archivo ya fue cargado, rechazar inmediatamente (409)
+        # sin gastar CPU/IO en parseo ni operaciones de BD.
+        extracto_por_hash = await self.extracto_repo.get_by_tarjeta_and_file_hash(
+            tarjeta_id=cmd.tarjeta_id,
+            file_hash=file_hash,
+        )
+
+        if extracto_por_hash is not None:
+            logger.warning(
+                "extracto_duplicado_detectado_por_hash_preparseo | "
+                "extracto_id=%s tarjeta_id=%s file_hash=%s",
+                str(extracto_por_hash.id),
+                str(cmd.tarjeta_id),
+                file_hash[:16] + "...",
+            )
+            try:
+                from src.infrastructure.observability.metrics import (
+                    record_extract_duplicated,
+                )
+                record_extract_duplicated("file_hash_preparseo")
+            except ImportError:
+                pass
+
+            raise ExtractoDuplicadoException(
+                extracto_id_existente=extracto_por_hash.id,
+                tarjeta_id=cmd.tarjeta_id,
+            )
+
+        # 1. Crear extracto en estado PENDING (sin persistir aun — Fix #1)
         extracto = Extracto(
             tarjeta_id=cmd.tarjeta_id,
             usuario_id=cmd.usuario_id,
             archivo_s3_key=f"extracts/{cmd.usuario_id}/{cmd.filename}",
         )
+        extracto.file_hash = file_hash  # Fix #3: asignar hash al extracto
         extracto.iniciar_procesamiento()
-
-        # Persistir extracto en estado PARSING (10%)
-        await self.extracto_repo.save(extracto)
 
         transaction_count = 0
         parse_errors: list[str] = []
@@ -128,9 +168,10 @@ class CommandHandler:
             extracto.metadatos = meta
             extracto.avanzar_parseo(40)
 
-            # 4. Crear y persistir transacciones
+            # 4. Crear entidades Transaccion en memoria (NO persistir aun)
+            #    Se persistiran despues de guardar el extracto (Fix #1)
+            transaccion_entities: list[Transaccion] = []
             if parse_result.transacciones:
-                transaccion_entities: list[Transaccion] = []
                 for t_data in parse_result.transacciones:
                     valor = t_data.get("valor", Decimal("0.00"))
                     if isinstance(valor, (int, float)):
@@ -156,7 +197,6 @@ class CommandHandler:
                     )
                     transaccion_entities.append(tx)
 
-                await self.transaccion_repo.bulk_save(transaccion_entities)
                 transaction_count = len(transaccion_entities)
                 extracto.transacciones = transaccion_entities
 
@@ -165,13 +205,80 @@ class CommandHandler:
 
         except Exception as e:
             logger.error(
-                "Error al parsear el Excel del extracto",
-                extracto_id=str(extracto.id),
-                filename=cmd.filename,
-                error=str(e),
+                "Error al parsear el Excel del extracto | extracto_id=%s filename=%s error=%s",
+                str(extracto.id),
+                cmd.filename,
+                str(e),
                 exc_info=True,
             )
             parse_errors.append(str(e))
+
+        # Fix #2: Si el periodo no es detectable, permitir carga pero solo
+        # con proteccion por hash (sin chequeo por periodo). Se emite WARN.
+        periodo_detectable = (
+            extracto.periodo_inicio is not None
+            and extracto.periodo_fin is not None
+        )
+        if not periodo_detectable:
+            logger.warning(
+                "periodo_no_detectable | extracto_id=%s tarjeta_id=%s "
+                "filename=%s — proteccion solo por file_hash",
+                str(extracto.id),
+                str(cmd.tarjeta_id),
+                cmd.filename,
+            )
+
+        # 4. PRE-FLIGHT CHECK de duplicado (feat-003)
+        # BN-DUP-01: Validar unicidad tarjeta + periodo exacto (solo si periodo detectable)
+        # Fix #3: Validacion secundaria por tarjeta + file_hash (siempre)
+        periodo_inicio = extracto.periodo_inicio
+        periodo_fin = extracto.periodo_fin
+
+        # BN-DUP-01: Buscar extracto existente por tarjeta + periodo
+        # Solo si el periodo fue detectable; si no, saltar a chequeo por hash
+        if periodo_detectable:
+            extracto_existente = await self.extracto_repo.get_by_tarjeta_and_periodo(
+                tarjeta_id=cmd.tarjeta_id,
+                periodo_inicio=periodo_inicio,
+                periodo_fin=periodo_fin,
+            )
+
+            if extracto_existente is not None:
+                # Rama SI existe por periodo: emitir evento + lanzar excepcion
+                if self.event_bus:
+                    await self.event_bus.publish(
+                        ExtractoDuplicadoDetectado(
+                            extracto_id_existente=extracto_existente.id,
+                            tarjeta_id=cmd.tarjeta_id,
+                            periodo_inicio=periodo_inicio,
+                            periodo_fin=periodo_fin,
+                        )
+                    )
+
+                logger.warning(
+                    "extracto_duplicado_detectado | extracto_id=%s tarjeta_id=%s "
+                    "periodo_inicio=%s periodo_fin=%s",
+                    str(extracto_existente.id),
+                    str(cmd.tarjeta_id),
+                    str(periodo_inicio),
+                    str(periodo_fin),
+                )
+
+                # Metrica feat-003: duplicado detectado en pre-flight
+                try:
+                    from src.infrastructure.observability.metrics import (
+                        record_extract_duplicated,
+                    )
+                    record_extract_duplicated("preflight")
+                except ImportError:
+                    pass
+
+                raise ExtractoDuplicadoException(
+                    extracto_id_existente=extracto_existente.id,
+                    tarjeta_id=cmd.tarjeta_id,
+                    periodo_inicio=periodo_inicio,
+                    periodo_fin=periodo_fin,
+                )
 
         # 5. Completar o marcar error segun resultado del parseo
         if parse_result and parse_result.exitoso:
@@ -186,19 +293,59 @@ class CommandHandler:
             extracto.marcar_error("No se encontraron transacciones en el archivo")
             events = []
 
-        # Persistir estado final del extracto
-        await self.extracto_repo.save(extracto)
+        # Fix #1: Persistir extracto DESPUES del parseo y validaciones
+        # (antes se persistia 2 veces: pre y post; ahora solo 1 vez post)
+        try:
+            await self.extracto_repo.save(extracto)
+        except IntegrityError:
+            # Safety net: Race condition capturada (feat-003 / T007)
+            logger.error(
+                "race_condition_detectada_extracto_duplicado | tarjeta_id=%s "
+                "periodo_inicio=%s periodo_fin=%s",
+                str(cmd.tarjeta_id),
+                str(extracto.periodo_inicio) if extracto.periodo_inicio else "None",
+                str(extracto.periodo_fin) if extracto.periodo_fin else "None",
+            )
+
+            # Metrica feat-003: race condition capturada
+            try:
+                from src.infrastructure.observability.metrics import (
+                    record_extract_duplicated,
+                )
+                record_extract_duplicated("race_condition")
+            except ImportError:
+                pass
+
+            raise ExtractoDuplicadoException()
+
+        # 5.5 Persistir transacciones DESPUES del extracto (Fix #1)
+        #    El extracto ya existe en BD, las FKs son validas
+        if transaccion_entities:
+            await self.transaccion_repo.bulk_save(transaccion_entities)
 
         # 6. Publicar eventos al bus de mensajes
         if self.event_bus:
             for event in events:
                 await self.event_bus.publish(event)
 
+        # Metrica: extracto cargado exitosamente
+        try:
+            from src.infrastructure.observability.metrics import (
+                record_extract_uploaded,
+                record_transaction_processed,
+            )
+            record_extract_uploaded(banco=parse_result.metadatos.get("banco", "desconocido") if parse_result else "desconocido")
+            for _ in range(transaction_count):
+                record_transaction_processed()
+        except ImportError:
+            pass
+
         logger.info(
             "Extracto procesado",
             extracto_id=str(extracto.id),
             usuario_id=str(cmd.usuario_id),
             filename=cmd.filename,
+            file_hash=file_hash[:16] + "...",
             transacciones=transaction_count,
             estado=extracto.estado.value if hasattr(extracto.estado, "value") else str(extracto.estado),
         )

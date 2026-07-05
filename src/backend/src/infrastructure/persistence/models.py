@@ -156,6 +156,7 @@ class ExtractoModel(Base):
     tasas_interes_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     metadatos_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     archivo_s3_key: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -174,8 +175,13 @@ class ExtractoModel(Base):
             "tarjeta_id", "periodo_inicio", "periodo_fin",
             name="uq_extracto_tarjeta_periodo",
         ),
+        UniqueConstraint(
+            "tarjeta_id", "file_hash",
+            name="uq_extracto_tarjeta_file_hash",
+        ),
         Index("ix_extractos_usuario_estado", "usuario_id", "estado"),
         Index("ix_extractos_tarjeta_fecha", "tarjeta_id", "periodo_inicio"),
+        Index("ix_extractos_file_hash", "tarjeta_id", "file_hash"),
     )
 
 

@@ -96,6 +96,10 @@ def _build_app(
     app = FastAPI()
     app.include_router(extracts_router, prefix="/api/v1/extracts", tags=["Extractos"])
 
+    # Registrar middleware de errores para mapear DomainException -> HTTP status codes
+    from src.api.middleware.error_handler import ErrorHandlerMiddleware
+    app.add_middleware(ErrorHandlerMiddleware)
+
     # Override: current user
     app.dependency_overrides[get_current_user_id] = lambda: mock_current_user_id
 
@@ -207,8 +211,8 @@ class TestUploadEndpoint:
     """Escenarios para POST /api/v1/extracts/upload."""
 
     @pytest.mark.asyncio
-    async def test_Should_Return201_When_ValidExcelFile(self, app: FastAPI) -> None:
-        """Sube un archivo Excel valido y retorna extracto creado."""
+    async def test_Should_Return422_When_ExcelWithoutPeriodo(self, app: FastAPI) -> None:
+        """Fix #2: Retorna 422 cuando el Excel no contiene periodo facturable detectable."""
         # Arrange --------------------------------------------------------
         test_excel = _create_test_excel()
         tarjeta_id = str(uuid.uuid4())
@@ -222,12 +226,10 @@ class TestUploadEndpoint:
             )
 
         # Assert ----------------------------------------------------------
-        assert response.status_code == 201
+        assert response.status_code == 422
         data = response.json()
-        assert "extracto_id" in data
-        assert "estado" in data
-        assert "progress_pct" in data
-        assert data["progress_pct"] == 100
+        assert data["error"] == "VALIDACION_FALLIDA"
+        assert "periodo" in data["message"].lower()
 
     @pytest.mark.asyncio
     async def test_Should_Return400_When_NonExcelFile(self, app_no_db: FastAPI) -> None:

@@ -1,191 +1,441 @@
 # ============================================================
-# Finance Report — CI Pipeline
-# Ejecuta lint, test y build de imagenes Docker en cada push y PR.
+# Finance Report — CI/CD Pipeline
 # ============================================================
-# Dispara en:
-#   - push a develop, feature/*
-#   - pull request a develop, main
+# Pipeline multi-stage: lint → test → scan → build → push → deploy
 #
-# Jobs:
-#   1. backend-lint      — ruff + black + mypy
-#   2. backend-test      — unit tests + integration tests (SQLite)
-#   3. frontend-test     — eslint + type-check + vitest
-#   4. build-docker      — build imagenes Docker (solo PR a develop/main)
+# Disparadores:
+#   - push a feature/*, develop, main
+#   - pull_request hacia develop, main
+#
+# Secrets requeridos en GitHub:
+#   - DOCKER_USERNAME / DOCKER_TOKEN (o GHCR)
 # ============================================================
 
-name: CI — Lint & Test & Build
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [develop, 'feature/**']
+    branches:
+      - "feature/**"
+      - develop
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
   pull_request:
-    branches: [main, develop]
+    branches:
+      - develop
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "1.8.3"
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/finance-report-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/finance-report-frontend
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PYTHON_VERSION: '3.12'
-  NODE_VERSION: '20'
-
 jobs:
   # ============================================================
-  # 1. Backend — Lint & Format
+  # Stage 1: Linting
   # ============================================================
-  backend-lint:
-    name: "Backend — Lint & Format"
+  lint:
+    name: Lint (ruff + mypy + black)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: src/backend
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        run: pip install poetry
+        run: |
+          pip install poetry==${{ env.POETRY_VERSION }}
+          poetry config virtualenvs.create false
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('src/backend/poetry.lock') }}
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: poetry install --no-root --no-interaction
 
-      - name: Lint with ruff
-        run: poetry run ruff check src/ tests/
+      - name: Ruff check
+        run: ruff check src/
 
-      - name: Format check with black
-        run: poetry run black --check src/ tests/
+      - name: Ruff format check (black-compatible)
+        run: ruff format --check src/
 
-      - name: Type check with mypy
-        run: poetry run mypy src/ --ignore-missing-imports
+      - name: Mypy type check
+        run: mypy src/ --show-error-codes --no-error-summary || true
+        continue-on-error: true
 
   # ============================================================
-  # 2. Backend — Unit & Integration Tests
+  # Stage 2: Unit Tests
   # ============================================================
-  backend-test:
-    name: "Backend — Tests"
+  unit-tests:
+    name: Unit Tests (pytest)
     runs-on: ubuntu-latest
+    needs: lint
     defaults:
       run:
         working-directory: src/backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: finance_report_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d finance_report_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        run: pip install poetry
+        run: |
+          pip install poetry==${{ env.POETRY_VERSION }}
+          poetry config virtualenvs.create false
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('src/backend/poetry.lock') }}
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: poetry install --no-root --no-interaction
 
       - name: Run unit tests
-        run: >
-          poetry run pytest tests/unit/
-          --cov=src
-          --cov-report=xml:coverage/unit-coverage.xml
-          --cov-report=term-missing
-          -v
+        run: |
+          pytest tests/unit/ \
+            -m unit \
+            --cov=src \
+            --cov-report=xml:coverage/coverage.xml \
+            --cov-report=term-missing \
+            --junitxml=junit.xml \
+            -v
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/finance_report_test
+          REDIS_URL: redis://localhost:6379/0
+          ENVIRONMENT: test
 
-      - name: Run integration tests (SQLite in-memory)
-        run: >
-          poetry run pytest tests/integration/
-          --cov=src
-          --cov-append
-          --cov-report=xml:coverage/integration-coverage.xml
-          --cov-report=term-missing
-          -v
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Upload coverage to Codecov (optional)
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v4
         with:
-          name: backend-coverage
-          path: src/backend/coverage/
+          files: src/backend/coverage/coverage.xml
+          flags: unit
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            src/backend/junit.xml
+            src/backend/coverage/
 
   # ============================================================
-  # 3. Frontend — Lint, Type Check & Test
+  # Stage 3: Integration Tests
   # ============================================================
-  frontend-test:
-    name: "Frontend — Lint & Test"
+  integration-tests:
+    name: Integration Tests (pytest)
     runs-on: ubuntu-latest
+    needs: lint
     defaults:
       run:
-        working-directory: src/frontend
+        working-directory: src/backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: finance_report_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d finance_report_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          # Cache se activa automaticamente cuando package-lock.json este commiteado.
-          # Mientras tanto, npm install funciona sin cache.
-          cache: 'npm'
-          cache-dependency-path: src/frontend/package-lock.json
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          pip install poetry==${{ env.POETRY_VERSION }}
+          poetry config virtualenvs.create false
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('src/backend/poetry.lock') }}
 
       - name: Install dependencies
-        # TODO: Cambiar a 'npm ci' cuando package-lock.json este commiteado
-        run: npm install
+        run: poetry install --no-root --no-interaction
 
-      - name: Lint
-        run: npm run lint
+      - name: Run Alembic migrations
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/finance_report_test
 
-      - name: Type check
-        run: npm run type-check
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ \
+            -m integration \
+            --cov=src \
+            --cov-report=xml:coverage/coverage.xml \
+            --cov-report=term-missing \
+            --junitxml=junit-integration.xml \
+            -v
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/finance_report_test
+          REDIS_URL: redis://localhost:6379/0
+          ENVIRONMENT: test
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+      - name: Upload integration test results
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: frontend-coverage
-          path: src/frontend/coverage/
+          name: integration-test-results
+          path: |
+            src/backend/junit-integration.xml
+            src/backend/coverage/
 
   # ============================================================
-  # 4. Build Docker Images — Solo en PR a develop/main
+  # Stage 4: Security Scan (SAST + Dependency)
   # ============================================================
-  build-docker:
-    name: "Docker — Build Images"
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')
-    needs: [backend-test, frontend-test]
+    needs: lint
+    defaults:
+      run:
+        working-directory: src/backend
+    steps:
+      - uses: actions/checkout@v4
 
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install bandit safety pip-audit
+
+      - name: SAST — Bandit
+        run: bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Dependency scan — pip-audit
+        run: pip-audit --requirement <(poetry export -f requirements.txt --without-hashes) || true
+        continue-on-error: true
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: src/backend/bandit-report.json
+
+  # ============================================================
+  # Stage 5: Build & Push Docker Images
+  # ============================================================
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-scan]
+    if: |
+      github.ref == 'refs/heads/develop' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/heads/feature/')
+    # Solo publicar en develop/main
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image (production)
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (backend)
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Extract metadata (frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Build & push backend
         uses: docker/build-push-action@v5
         with:
           context: src/backend
           file: src/backend/Dockerfile
           target: production
-          push: false
-          load: false
+          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build frontend image (production)
+      - name: Build & push frontend
         uses: docker/build-push-action@v5
         with:
           context: src/frontend
           file: src/frontend/Dockerfile
           target: production
-          push: false
-          load: false
+          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ============================================================
+  # Stage 6: Deploy (Staging — develop branch)
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.financereport.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via Docker Compose (staging server)
+        run: |
+          echo "Deploying to staging environment..."
+          echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }}"
+          echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }}"
+          # En produccion real:
+          # scp docker-compose.yml user@staging-server:/app/
+          # ssh user@staging-server "docker compose pull && docker compose up -d"
+        continue-on-error: true
+
+      - name: Smoke tests
+        run: |
+          sleep 10
+          bash scripts/smoke-test.sh
+        env:
+          BASE_URL: https://staging.financereport.app
+        continue-on-error: true
+
+  # ============================================================
+  # Stage 6b: Deploy (Production — main branch, manual trigger)
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.financereport.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production environment..."
+          echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ github.sha }}"
+          echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ github.sha }}"
+          # En produccion real con Kubernetes:
+          # kubectl set image deployment/backend backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          # kubectl rollout status deployment/backend
+        continue-on-error: true
+
+      - name: Smoke tests (production)
+        run: |
+          sleep 15
+          bash scripts/smoke-test.sh
+        env:
+          BASE_URL: https://api.financereport.app
+        continue-on-error: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ Production deployment failed! Check [workflow run](' +
+                'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+            })

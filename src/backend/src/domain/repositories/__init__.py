@@ -106,6 +106,12 @@ class IExtractoRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_by_tarjeta_and_file_hash(
+        self, tarjeta_id: UUID, file_hash: str
+    ) -> Any | None:
+        ...
+
+    @abstractmethod
     async def save(self, extracto: Any) -> Any:
         ...
 
