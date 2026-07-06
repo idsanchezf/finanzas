@@ -54,7 +54,7 @@ class RefreshTokenRepository:
         """
         stmt = select(RefreshTokenModel).where(
             RefreshTokenModel.token_jti == token_jti,
-            RefreshTokenModel.revoked is False,
+            RefreshTokenModel.revoked == False,
             RefreshTokenModel.expires_at > datetime.now(UTC),
         )
         result = await self.session.execute(stmt)
@@ -91,7 +91,7 @@ class RefreshTokenRepository:
             update(RefreshTokenModel)
             .where(
                 RefreshTokenModel.usuario_id == usuario_id,
-                RefreshTokenModel.revoked is False,
+                RefreshTokenModel.revoked == False,
             )
             .values(revoked=True)
         )
