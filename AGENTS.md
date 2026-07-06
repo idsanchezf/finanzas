@@ -48,6 +48,21 @@ Este proyecto utiliza ingenieria de arneses con opencode para orquestar el ciclo
 - Aplicar TDD (skill `tdd`) en implementacion y BDD (skill `bdd`) en criterios de aceptacion
 - Mantener vivo `docs/architecture.md` con ADRs actualizados via agente `architect`
 
+### Validacion de codigo antes de commit
+
+**Obligatorio** ejecutar ambos comandos de ruff en local antes de cada commit. El pipeline de CI fallara si alguno no pasa:
+
+```bash
+# Desde el directorio raiz del proyecto:
+docker compose exec backend ruff check src/
+docker compose exec backend ruff format --check src/
+
+# Si ruff format reporta archivos que necesitan reformateo:
+docker compose exec backend ruff format src/
+```
+
+Reglas de linter — **corregir, no ignorar**. Si una regla no puede corregirse, consultar antes de agregarla a `ignore` en `pyproject.toml`. Unica excepcion documentada: `B008` (patron idiomatico de FastAPI: `Depends()`, `Body()`, `File()`, `Query()` en argumentos por defecto).
+
 ### Seleccion de tecnologia
 
 La tecnologia se define en la fase `design` y se persiste en `docs/architecture.md` en la tabla "Stack tecnologico":
