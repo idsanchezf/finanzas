@@ -1,0 +1,62 @@
+# ============================================================
+# Finance Report — Deployment API Backend (FastAPI)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-backend
+  namespace: finance-report
+  labels:
+    app: finance-report
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: finance-backend
+  template:
+    metadata:
+      labels:
+        app: finance-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/finance-report/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: finance-config
+            - secretRef:
+                name: finance-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: 1000

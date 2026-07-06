@@ -1,0 +1,60 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+env/
+.eggs/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+*.local
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+htmlcov/
+.lcov
+*.lcov
+*.coverage
+
+# Test
+TestResults/
+test-results/
+tests/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Poetry
+poetry.lock
+
+# Node (por si acaso)
+node_modules/

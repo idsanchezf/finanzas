@@ -1,0 +1,234 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================================
+   Design Tokens — CSS Custom Properties
+   ========================================================================= */
+
+@layer base {
+  :root {
+    /* Colores principales */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+
+    /* Semantica */
+    --color-success-50: #ecfdf5;
+    --color-success-500: #10b981;
+    --color-success-700: #047857;
+    --color-warning-50: #fffbeb;
+    --color-warning-500: #f59e0b;
+    --color-warning-700: #b45309;
+    --color-danger-50: #fef2f2;
+    --color-danger-500: #ef4444;
+    --color-danger-700: #b91c1c;
+
+    /* Superficies */
+    --color-bg-primary: #f9fafb;
+    --color-bg-secondary: #ffffff;
+    --color-border: #f3f4f6;
+    --color-text-primary: #111827;
+    --color-text-secondary: #6b7280;
+    --color-text-muted: #9ca3af;
+
+    /* Sombras */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+    /* Radios */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+
+    /* Tipografia */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* Layout */
+    --navbar-height: 3.5rem;
+    --sidebar-width: 16rem;
+    --mobile-nav-height: 4rem;
+    --content-max-width: 80rem;
+
+    /* Animaciones */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+  }
+
+  /* Modo oscuro */
+  .dark {
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-border: #334155;
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #64748b;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* =========================================================================
+   Base — Estilos fundamentales
+   ========================================================================= */
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] antialiased;
+    font-family: var(--font-sans);
+    /* Previene el bounce en iOS PWA */
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Safe area para dispositivos con notch (iPhone X+) */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+  }
+
+  /* Scrollbar personalizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-gray-300;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  /* Seleccion de texto */
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+}
+
+/* =========================================================================
+   Components — Clases reutilizables
+   ========================================================================= */
+
+@layer components {
+  /* Card reutilizable */
+  .card {
+    @apply rounded-xl border border-gray-100 bg-white p-4 shadow-sm md:p-6;
+    @apply dark:border-gray-700 dark:bg-gray-800;
+  }
+
+  .card-hover {
+    @apply card cursor-pointer transition-shadow hover:shadow-md;
+  }
+
+  /* Badge de categoria */
+  .badge-category {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Boton primario */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 
+           font-medium text-white transition-colors duration-200 
+           hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 
+           focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary-sm {
+    @apply btn-primary px-3 py-1.5 text-sm;
+  }
+
+  /* Boton secundario */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 
+           bg-white px-4 py-2 font-medium text-gray-700 transition-colors 
+           duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 
+           focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 
+           dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 
+           font-medium text-gray-600 transition-colors duration-200 
+           hover:bg-gray-100 active:bg-gray-200 dark:text-gray-300 
+           dark:hover:bg-gray-700 dark:active:bg-gray-600;
+  }
+
+  /* Input */
+  .input-field {
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
+           shadow-sm placeholder-gray-400 focus:border-primary-500 
+           focus:outline-none focus:ring-2 focus:ring-primary-500 
+           dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 
+           dark:placeholder-gray-500;
+  }
+
+  /* Labels */
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  /* Divider */
+  .divider {
+    @apply my-4 border-t border-gray-200 dark:border-gray-700;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse rounded-md bg-gray-200 dark:bg-gray-700;
+  }
+}
+
+/* =========================================================================
+   Utilities
+   ========================================================================= */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Ocultar scrollbar manteniendo funcionalidad */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Touch target minimo para accesibilidad movil (44x44px) */
+  .touch-target {
+    @apply flex min-h-[44px] min-w-[44px] items-center justify-center;
+  }
+}

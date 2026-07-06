@@ -1,0 +1,164 @@
+# ============================================================
+# Finance Report — Docker Compose (base)
+# ============================================================
+# Define los 5 servicios core del sistema.
+# Para desarrollo local se aplica automaticamente
+# docker-compose.override.yml con hot-reload y volumenes.
+#
+# Uso:
+#   docker compose up -d            # Inicia todos los servicios + override dev
+#   docker compose up backend -d    # Solo backend + dependencias
+#   docker compose down -v          # Detiene y elimina volumenes
+#   docker compose logs -f backend  # Logs en tiempo real del backend
+#   docker compose ps               # Estado de los servicios
+#
+# Puertos expuestos:
+#   Backend API:   http://localhost:8000
+#   Frontend:      http://localhost:3000
+#   PostgreSQL:    localhost:5432
+#   Redis:         localhost:6379
+#   RabbitMQ AMQP: localhost:5672
+#   RabbitMQ UI:   http://localhost:15672  (guest / guest)
+# ============================================================
+
+services:
+  # =============================================================
+  # 1. PostgreSQL 16 — Base de datos relacional
+  # =============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: finance-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_report
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finance_report"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 2. Redis 7 — Cache (dashboards, rate limiting)
+  # =============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: finance-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 3. RabbitMQ 3.13 — Message broker (AMQP + Management UI)
+  # =============================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: finance-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 4. Backend — FastAPI en puerto 8000
+  # =============================================================
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: finance-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/finance_report
+      DATABASE_URL_SYNC: postgresql://postgres:postgres@postgres:5432/finance_report
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      ENVIRONMENT: development
+      CORS_ORIGINS: http://localhost:3000
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - finance-network
+
+  # =============================================================
+  # 5. Frontend — Next.js en puerto 3000
+  # =============================================================
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: finance-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    depends_on:
+      - backend
+    networks:
+      - finance-network
+
+# =============================================================
+# Volumenes persistentes
+# =============================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+# =============================================================
+# Redes
+# =============================================================
+networks:
+  finance-network:
+    driver: bridge
+    name: finance-network

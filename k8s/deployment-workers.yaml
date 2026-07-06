@@ -1,0 +1,128 @@
+# ============================================================
+# Finance Report — Deployment Workers (ExtractProc + ClassSvc + NotifSvc)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-extract-processor
+  namespace: finance-report
+  labels:
+    app: finance-report
+    component: extract-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finance-extract-processor
+  template:
+    metadata:
+      labels:
+        app: finance-extract-processor
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/finance-report/backend:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "src.workers.extract_processor"]
+          envFrom:
+            - configMapRef:
+                name: finance-config
+            - secretRef:
+                name: finance-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-classification
+  namespace: finance-report
+  labels:
+    app: finance-report
+    component: classification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finance-classification
+  template:
+    metadata:
+      labels:
+        app: finance-classification
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/finance-report/backend:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "src.workers.classification_worker"]
+          envFrom:
+            - configMapRef:
+                name: finance-config
+            - secretRef:
+                name: finance-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: 1000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-notifications
+  namespace: finance-report
+  labels:
+    app: finance-report
+    component: notifications
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finance-notifications
+  template:
+    metadata:
+      labels:
+        app: finance-notifications
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/finance-report/backend:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "src.workers.notification_worker"]
+          envFrom:
+            - configMapRef:
+                name: finance-config
+            - secretRef:
+                name: finance-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: 1000

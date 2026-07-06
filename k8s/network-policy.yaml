@@ -1,0 +1,190 @@
+# ============================================================
+# Finance Report — Network Policies
+# ============================================================
+# Restringe el trafico entre pods siguiendo el principio de
+# minimo privilegio. Solo se permite el trafico necesario entre
+# componentes.
+#
+# Reglas:
+#   - Ingress → solo puede llegar al backend (API Gateway)
+#   - Backend → puede hablar con RabbitMQ, PostgreSQL, Redis
+#   - Workers → solo reciben de RabbitMQ, hablan con PostgreSQL
+#   - RabbitMQ → acepta conexiones del backend
+#   - Redis → acepta conexiones del backend
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-backend
+  namespace: finance-report
+spec:
+  podSelector:
+    matchLabels:
+      app: finance-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Permite trafico desde el ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 8000
+          protocol: TCP
+    # Permite health checks desde kubelet
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 8000
+          protocol: TCP
+---
+# Backend puede comunicarse con RabbitMQ, Redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress
+  namespace: finance-report
+spec:
+  podSelector:
+    matchLabels:
+      app: finance-backend
+  policyTypes:
+    - Egress
+  egress:
+    # Permitir DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+    # RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app: rabbitmq
+      ports:
+        - port: 5672
+          protocol: TCP
+    # Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    # Internet (para Gemini, R2, Supabase, Upstash, OAuth2)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+---
+# RabbitMQ acepta conexiones de pods etiquetados como finance-report
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-rabbitmq-ingress
+  namespace: finance-report
+spec:
+  podSelector:
+    matchLabels:
+      app: rabbitmq
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - finance-backend
+                  - finance-extract-processor
+                  - finance-classification
+                  - finance-notifications
+      ports:
+        - port: 5672
+          protocol: TCP
+---
+# Redis solo acepta conexiones del backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-ingress
+  namespace: finance-report
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: finance-backend
+      ports:
+        - port: 6379
+          protocol: TCP
+---
+# Workers solo necesitan salida a RabbitMQ + Internet (Supabase, Gemini)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-workers-egress
+  namespace: finance-report
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - finance-backend
+          - finance-extract-processor
+          - finance-classification
+          - finance-notifications
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+    # RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app: rabbitmq
+      ports:
+        - port: 5672
+          protocol: TCP
+    # Internet (para Supabase, Gemini, R2)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP

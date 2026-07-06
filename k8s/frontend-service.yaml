@@ -1,0 +1,23 @@
+# ============================================================
+# Finance Report — Frontend Service (Next.js)
+# ============================================================
+# NOTA: En produccion el frontend se despliega en Vercel.
+# Este service es para despliegue auto-gestionado en K8s (alternativa).
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: finance-frontend-svc
+  namespace: finance-report
+  labels:
+    app: finance-report
+    component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: finance-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP

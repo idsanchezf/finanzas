@@ -1,0 +1,306 @@
+{
+  "featureId": "feat-001",
+  "slug": "mvp",
+  "branch": "feature/feat-001-mvp",
+  "createdAt": "2026-06-13T00:00:00Z",
+  "tasks": [
+    {
+      "id": "task-001",
+      "title": "Implementar Value Object Money con TDD",
+      "status": "completed",
+      "priority": "high",
+      "layer": "domain",
+      "description": "Escribir tests unitarios para el Value Object Money (creacion, operaciones aritmeticas, conversion de moneda, validaciones de igualdad). Luego implementar la clase Money con Decimal para precision financiera.",
+      "files": [
+        "tests/unit/domain/value_objects/MoneyTests/test_init.py",
+        "test_arithmetic.py",
+        "test_conversion.py",
+        "src/domain/value_objects/money.py"
+      ]
+    },
+    {
+      "id": "task-002",
+      "title": "Implementar entidad Categoria con TDD",
+      "status": "completed",
+      "priority": "high",
+      "layer": "domain",
+      "description": "Tests para la entidad Categoria: creacion, palabras clave, subcategorias, metodo precargadas(). Verificar las 14 categorias predefinidas.",
+      "files": [
+        "tests/unit/domain/entities/CategoriaTests/*.py",
+        "src/domain/entities/categoria.py"
+      ]
+    },
+    {
+      "id": "task-003",
+      "title": "Implementar entidad Transaccion con TDD",
+      "status": "completed",
+      "priority": "high",
+      "layer": "domain",
+      "description": "Tests para Transaccion: creacion, flags de abono/cuota, metodo clasificar(), metodo corregir_categoria(), eventos de dominio.",
+      "files": [
+        "tests/unit/domain/entities/TransaccionTests/*.py",
+        "src/domain/entities/transaccion.py"
+      ]
+    },
+    {
+      "id": "task-004",
+      "title": "Implementar entidad Extracto con TDD",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "domain",
+      "description": "Tests para Extracto: creacion, ciclo de vida (PENDING → PROCESSING → COMPLETED/ERROR), metodo iniciar_procesamiento(), calculo de progreso.",
+      "files": [
+        "tests/unit/domain/entities/ExtractoTests/*.py",
+        "src/domain/entities/extracto.py"
+      ]
+    },
+    {
+      "id": "task-005",
+      "title": "Implementar clasificador deterministico con TDD",
+      "status": "completed",
+      "priority": "high",
+      "layer": "infrastructure",
+      "description": "Implementacion concreta del motor de reglas deterministicas. Tests con comercios reales de Bancolombia: 'DLO*DIDI FOOD', 'UBER *TRIP', 'NETFLIX.COM', etc. Verificar 14 categorias con palabras clave.",
+      "files": [
+        "tests/unit/infrastructure/excel/ClasificadorReglasTests/*.py",
+        "src/infrastructure/excel/clasificador_reglas.py"
+      ]
+    },
+    {
+      "id": "task-006",
+      "title": "Implementar parser Excel Bancolombia con TDD",
+      "status": "done",
+      "priority": "high",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "layer": "infrastructure",
+      "description": "Tests de integracion con archivos Excel reales de Bancolombia (7681_*.xlsx). Verificar extraccion de metadatos (fecha_corte, cupo), transacciones, sub-filas VR MONEDA ORIG, cuotas.",
+      "files": [
+        "tests/unit/infrastructure/excel/ParserBancolombiaTests/*.py",
+        "src/infrastructure/excel/parser.py"
+      ]
+    },
+    {
+      "id": "task-007",
+      "title": "Implementar repositorios SQLAlchemy",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "infrastructure",
+      "description": "Implementacion concreta de repositorios contra PostgreSQL: UsuarioRepo, ExtractoRepo, TransaccionRepo, CategoriaRepo. Tests de integracion con BD en memoria o test containers.",
+      "files": [
+        "tests/integration/database/*.py",
+        "src/infrastructure/persistence/repositories/*.py"
+      ]
+    },
+    {
+      "id": "task-008",
+      "title": "Generar migraciones Alembic e inicializar BD",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "infrastructure",
+      "description": "Configurar Alembic con los modelos SQLAlchemy. Generar migracion inicial con todas las tablas: usuarios, tarjetas, extractos, transacciones, categorias, presupuestos, metas_ahorro, traducciones_comercios, notificaciones, sesiones_chat, mensajes_chat.",
+      "files": [
+        "alembic/versions/001_initial_schema.py",
+        "alembic/env.py"
+      ]
+    },
+    {
+      "id": "task-009",
+      "title": "Implementar autenticacion JWT + OAuth2 Google",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "presentation",
+      "description": "Endpoints /auth/login, /auth/refresh, /auth/me. Middleware de auth. Validacion de JWT. Integracion con Google OAuth2. Tests de integracion.",
+      "files": [
+        "tests/integration/api/test_auth.py",
+        "src/api/routers/auth.py",
+        "src/api/middleware/auth.py",
+        "src/api/dependencies.py"
+      ]
+    },
+    {
+      "id": "task-010",
+      "title": "Implementar endpoints de extractos (upload/status/list/delete)",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "presentation",
+      "description": "Endpoints REST para carga y gestion de extractos. Upload con validacion de archivo, almacenamiento R2, registro en BD. Status para polling. List con paginacion. Delete con cascade.",
+      "files": [
+        "tests/integration/api/test_extracts.py",
+        "src/api/routers/extracts.py",
+        "src/application/commands/cargar_extracto.py",
+        "src/application/handlers/command_handlers.py"
+      ]
+    },
+    {
+      "id": "task-011",
+      "title": "Implementar endpoints de transacciones (list/get/classify)",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "high",
+      "layer": "presentation",
+      "description": "CRUD de transacciones con filtros, paginacion cursor-based. Clasificacion individual y masiva. Filtros por categoria, periodo, comercio.",
+      "files": [
+        "tests/integration/api/test_transactions.py",
+        "src/api/routers/transactions.py",
+        "src/application/handlers/command_handlers.py",
+        "src/application/queries/obtener_transacciones.py"
+      ]
+    },
+    {
+      "id": "task-012",
+      "title": "Implementar queries de dashboard (summary, by-category, daily)",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "application",
+      "description": "Queries de agregacion SQL para KPIs (total_gastado, avg_diario, variacion), distribucion por categoria (donut), gasto diario (barras apiladas). Cache Redis 60s TTL.",
+      "files": [
+        "tests/unit/application/queries/DashboardQueryTests/*.py",
+        "src/application/queries/dashboard_summary.py",
+        "src/application/queries/dashboard_by_category.py",
+        "src/application/queries/dashboard_daily.py"
+      ]
+    },
+    {
+      "id": "task-013",
+      "title": "Implementar categorias predefinidas seed",
+      "status": "done",
+      "completedAt": "2026-06-13T00:00:00Z",
+      "priority": "medium",
+      "layer": "infrastructure",
+      "description": "Script o migracion para sembrar las 14 categorias predefinidas con sus palabras clave, iconos y colores en la BD.",
+      "files": [
+        "src/infrastructure/persistence/seeds/categorias_seed.py",
+        "alembic/versions/002_seed_categorias.py"
+      ]
+    },
+    {
+      "id": "task-014",
+      "title": "Implementar worker de procesamiento de extractos",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "workers",
+      "description": "Worker que consume de RabbitMQ cola extract.uploaded, parsea el Excel, persiste transacciones y publica transactions.new. Tests de integracion.",
+      "files": [
+        "tests/unit/workers/test_extract_processor.py",
+        "src/workers/extract_processor.py"
+      ]
+    },
+    {
+      "id": "task-015",
+      "title": "Implementar worker de clasificacion",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "workers",
+      "description": "Worker que consume transactions.new, ejecuta el motor de clasificacion hibrido y actualiza categorias en BD.",
+      "files": [
+        "tests/unit/workers/test_classification_worker.py",
+        "src/workers/classification_worker.py"
+      ]
+    },
+    {
+      "id": "task-016",
+      "title": "Implementar frontend Next.js — layout y PWA",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "frontend",
+      "description": "App Router layout, manifest.json, Service Worker, diseño mobile-first con Tailwind CSS. Componentes base: navegacion, tema, loading states.",
+      "files": [
+        "src/frontend/src/app/layout.tsx",
+        "src/frontend/src/app/manifest.ts",
+        "public/manifest.json"
+      ]
+    },
+    {
+      "id": "task-017",
+      "title": "Implementar frontend — login OAuth2 con Google",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "frontend",
+      "description": "Pagina de login con boton de Google OAuth2. Manejo de JWT en cookies HttpOnly. Middleware de proteccion de rutas.",
+      "files": [
+        "src/frontend/src/app/auth/login/page.tsx",
+        "src/frontend/src/app/auth/callback/page.tsx",
+        "src/frontend/src/lib/auth.ts"
+      ]
+    },
+    {
+      "id": "task-018",
+      "title": "Implementar frontend — carga de extracto",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "frontend",
+      "description": "Pagina de carga de extracto con dropzone, barra de progreso via polling del status endpoint, lista de extractos cargados.",
+      "files": [
+        "src/frontend/src/app/extracts/upload/page.tsx",
+        "src/frontend/src/app/extracts/page.tsx",
+        "src/frontend/src/components/FileDropzone.tsx"
+      ]
+    },
+    {
+      "id": "task-019",
+      "title": "Implementar frontend — dashboard basico",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "frontend",
+      "description": "Dashboard con KPIs (cards), grafico donut por categoria (Recharts + tremor), grafico de barras diarias. Datos via client-side fetch a API.",
+      "files": [
+        "src/frontend/src/app/dashboard/page.tsx",
+        "src/frontend/src/components/DashboardKPIs.tsx",
+        "src/frontend/src/components/CategoryDonut.tsx",
+        "src/frontend/src/components/DailyBarChart.tsx"
+      ]
+    },
+    {
+      "id": "task-020",
+      "title": "Implementar frontend — lista de transacciones",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "medium",
+      "layer": "frontend",
+      "description": "Tabla de transacciones con paginacion, filtros por categoria y periodo, busqueda por comercio. Clasificacion manual via dropdown.",
+      "files": [
+        "src/frontend/src/app/transactions/page.tsx",
+        "src/frontend/src/components/TransactionTable.tsx",
+        "src/frontend/src/components/ClassificationDropdown.tsx"
+      ]
+    },
+    {
+      "id": "task-021",
+      "title": "Configurar CI/CD con GitHub Actions",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "low",
+      "layer": "devops",
+      "description": "Workflows: test (backend pytest + frontend vitest), lint (ruff + eslint), build (Docker), deploy (Vercel preview). Correr en PRs y push a develop.",
+      "files": [
+        ".github/workflows/test.yml",
+        ".github/workflows/deploy.yml"
+      ]
+    },
+    {
+      "id": "task-022",
+      "title": "Configurar Docker Compose para desarrollo local",
+      "status": "done",
+      "completedAt": "2026-06-17T00:00:00Z",
+      "priority": "low",
+      "layer": "devops",
+      "description": "Asegurar docker-compose.yml funcional con PostgreSQL, Redis, RabbitMQ. Health checks y dependencias entre servicios. Volumenes para datos persistentes.",
+      "files": [
+        "docker-compose.yml",
+        ".env.example"
+      ]
+    }
+  ]
+}

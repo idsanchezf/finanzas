@@ -1,18 +1,62 @@
 {
   "project": "Finance Report",
   "createdAt": "2026-06-02T00:00:00Z",
-  "updatedAt": "2026-06-02T12:30:00Z",
+  "updatedAt": "2026-07-04T02:00:00Z",
   "humanInTheLoop": false,
-  "currentPhase": "scaffold",
+  "currentPhase": "completed",
   "phases": {
-    "analysis":   { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T00:00:00Z" },
-    "architect":  { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T12:01:00Z", "completedAt": "2026-06-02T12:30:00Z", "previousRun": { "status": "completed", "approved": true, "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T00:00:00Z", "purpose": "ADRs iniciales (001-008) y diagramas C4" }, "currentRun": { "purpose": "Validacion del stack tecnologico definido en design + generacion de ADR-009" } },
-    "design":     { "status": "completed",  "approved": true,  "startedAt": "2026-06-02T00:00:00Z", "completedAt": "2026-06-02T12:00:00Z" },
-    "scaffold":   { "status": "in_progress", "approved": false, "startedAt": "2026-06-02T12:30:00Z" },
-    "develop":    { "status": "pending",    "approved": false },
-    "test":       { "status": "pending",    "approved": false },
-    "quality":    { "status": "pending",    "approved": false },
-    "deploy":     { "status": "pending",    "approved": false }
+    "analysis":   { "status": "completed",  "approved": false, "startedAt": "2026-06-22T02:00:00Z", "completedAt": "2026-07-04T00:00:00Z" },
+    "architect":  { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:00:00Z", "completedAt": "2026-07-04T00:00:00Z" },
+    "design":     { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:00:00Z", "completedAt": "2026-07-04T00:00:00Z" },
+    "scaffold":   { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:00:00Z", "completedAt": "2026-07-04T00:10:00Z" },
+    "develop":    { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:10:00Z", "completedAt": "2026-07-04T00:25:00Z" },
+    "test":       { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:25:00Z", "completedAt": "2026-07-04T00:25:00Z" },
+    "quality":    { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:25:00Z", "completedAt": "2026-07-04T00:30:00Z" },
+    "deploy":     { "status": "completed", "approved": false, "startedAt": "2026-07-04T00:30:00Z", "completedAt": "2026-07-04T01:00:00Z" }
   },
-  "features": []
+  "features": [
+    {
+      "id": "feat-001",
+      "slug": "mvp",
+      "branch": "feature/feat-001-mvp",
+      "status": "done",
+      "description": "MVP — Scaffolding y estructura base del proyecto",
+      "phase": "develop",
+      "docsPath": "docs/features/feat-001-mvp/",
+      "createdAt": "2026-06-02T00:00:00Z",
+      "startedAt": "2026-06-02T14:45:00Z",
+      "completedAt": "2026-06-17T00:00:00Z"
+    },
+    {
+      "id": "feat-002",
+      "name": "Identificar tarjeta desde extracto",
+      "slug": "identificar-tarjeta-extracto",
+      "description": "Identificar/crear tarjeta desde el extracto bancario. Extraer banco + ultimos 4 digitos del Excel (empezando por Bancolombia), implementar find-or-create de tarjeta en el flujo de carga de extractos. Arquitectura configurable por banco para futuros bancos.",
+      "status": "done",
+      "phase": "test",
+      "priority": "high",
+      "assignedTo": "develop",
+      "docsPath": "docs/features/feat-002-identificar-tarjeta-extracto/",
+      "createdAt": "2026-06-21T00:00:00Z",
+      "startedAt": "2026-06-21T00:00:00Z",
+      "completedAt": "2026-06-22T01:10:00Z",
+      "branch": "feature/feat-002-identificar-tarjeta-extracto"
+    },
+    {
+      "id": "feat-003",
+      "name": "Prevenir extractos duplicados",
+      "slug": "prevenir-extractos-duplicados",
+      "description": "Prevenir carga de extractos duplicados. Agregar validacion pre-flight en el handler de carga usando get_by_tarjeta_and_periodo() (ya existe). Si se detecta duplicado, devolver 409 Conflict con mensaje descriptivo en vez del error 500 generico de BD. Depende de feat-002 (tarjeta correctamente identificada).",
+      "status": "done",
+      "phase": "analysis",
+      "priority": "high",
+      "assignedTo": "analysis",
+      "docsPath": "docs/features/feat-003-prevenir-extractos-duplicados/",
+      "dependencies": ["feat-002"],
+      "createdAt": "2026-06-22T02:00:00Z",
+      "startedAt": "2026-06-22T02:00:00Z",
+      "completedAt": "2026-07-04T02:00:00Z",
+      "branch": "feature/feat-003-prevenir-extractos-duplicados"
+    }
+  ]
 }

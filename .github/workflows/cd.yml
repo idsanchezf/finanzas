@@ -1,0 +1,322 @@
+# ============================================================
+# Finance Report — CD Pipeline (Continuous Deployment)
+# ============================================================
+# Dispara en:
+#   - push a main     → despliegue a produccion
+#   - push a develop  → despliegue a staging
+#
+# Jobs:
+#   1. build-backend     — build y push imagen backend a GHCR
+#   2. build-frontend    — build y push imagen frontend a GHCR
+#   3. deploy-frontend   — despliegue a Vercel
+#   4. deploy-backend    — despliegue a Oracle Cloud OKE (documentado)
+#
+# Imagenes publicadas en GitHub Container Registry (ghcr.io):
+#   ghcr.io/{owner}/finance-report/backend:{sha}  → imagen backend
+#   ghcr.io/{owner}/finance-report/frontend:{sha} → imagen frontend
+#   ghcr.io/{owner}/finance-report/backend:latest  → solo en main
+#   ghcr.io/{owner}/finance-report/frontend:latest → solo en main
+#
+# NOTA: Los workflows especificos deploy-backend.yml y deploy-frontend.yml
+# deben eliminarse para evitar doble despliegue al activar este CD unificado.
+# ============================================================
+
+name: CD — Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'k8s/**'
+      - '.github/workflows/cd.yml'
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/backend
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend
+
+jobs:
+  # ============================================================
+  # 1. Build & Push Backend Docker Image → GHCR
+  # ============================================================
+  build-backend:
+    name: "Build & Push — Backend"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE }}
+          tags: |
+            # Tag con short SHA del commit (siempre)
+            type=sha,format=short,prefix=
+            # Tag con nombre de rama (main, develop)
+            type=ref,event=branch
+            # Tag 'latest' solo en main (produccion)
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: src/backend
+          file: src/backend/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================
+  # 2. Build & Push Frontend Docker Image → GHCR
+  # ============================================================
+  build-frontend:
+    name: "Build & Push — Frontend"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            # Tag con short SHA del commit (siempre)
+            type=sha,format=short,prefix=
+            # Tag con nombre de rama (main, develop)
+            type=ref,event=branch
+            # Tag 'latest' solo en main (produccion)
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: src/frontend
+          file: src/frontend/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================
+  # 3. Deploy Frontend → Vercel
+  # ============================================================
+  deploy-frontend:
+    name: "Deploy — Frontend (Vercel)"
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      # La URL del despliegue se muestra en los logs de Vercel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        id: vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          # --prod solo en rama main (produccion)
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+          working-directory: src/frontend
+        continue-on-error: true
+
+      # ============================================================
+      # Documentacion: como configurar Vercel si no esta listo
+      # ============================================================
+      - name: "Docs: Vercel setup instructions"
+        if: steps.vercel.outcome == 'failure'
+        run: |
+          echo "::warning::==================================================================="
+          echo "::warning::Vercel deployment fallo o no esta configurado."
+          echo "::warning::Para configurar el despliegue automatico en Vercel:"
+          echo "::warning::"
+          echo "::warning::  1. Crear proyecto en https://vercel.com/new"
+          echo "::warning::     - Framework: Next.js"
+          echo "::warning::     - Root Directory: src/frontend"
+          echo "::warning::     - Build Command: npm run build"
+          echo "::warning::     - Output Directory: .next"
+          echo "::warning::"
+          echo "::warning::  2. Instalar Vercel CLI: npm i -g vercel"
+          echo "::warning::  3. Vincular proyecto: cd src/frontend && vercel link"
+          echo "::warning::     Esto genera .vercel/project.json con orgId y projectId"
+          echo "::warning::"
+          echo "::warning::  4. Generar token: https://vercel.com/account/tokens"
+          echo "::warning::"
+          echo "::warning::  5. Configurar secrets en GitHub:"
+          echo "::warning::     Settings > Secrets and variables > Actions > New repository secret"
+          echo "::warning::     - VERCEL_TOKEN:     token generado en paso 4"
+          echo "::warning::     - VERCEL_ORG_ID:    teamId de .vercel/project.json"
+          echo "::warning::     - VERCEL_PROJECT_ID: projectId de .vercel/project.json"
+          echo "::warning::"
+          echo "::warning::  6. Vercel ofrece preview deployments automaticos por rama."
+          echo "::warning::     Alternativamente, usa Vercel GitHub Integration en vez de este action."
+          echo "::warning::==================================================================="
+
+  # ============================================================
+  # 4. Deploy Backend → Oracle Cloud OKE
+  # ============================================================
+  deploy-backend:
+    name: "Deploy — Backend (Oracle OKE)"
+    runs-on: ubuntu-latest
+    needs: build-backend
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    # Descomentar 'if' cuando OKE este configurado
+    if: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ============================================================
+      # Documentacion: como configurar Oracle OKE
+      # ============================================================
+      - name: "Docs: Oracle Cloud setup instructions"
+        run: |
+          echo "::notice::==================================================================="
+          echo "::notice::Despliegue a Oracle OKE deshabilitado (if: false)."
+          echo "::notice::Para habilitar el despliegue a Oracle Cloud Kubernetes:"
+          echo "::notice::"
+          echo "::notice::  PRERREQUISITOS:"
+          echo "::notice::  1. Cuenta Oracle Cloud Always Free activa"
+          echo "::notice::     https://signup.cloud.oracle.com/"
+          echo "::notice::  2. VM Ampere A1 creada (4 OCPU, 24GB RAM, 200GB disco)"
+          echo "::notice::     Compute > Instances > Create instance"
+          echo "::notice::     Image: Oracle Linux 8 o Ubuntu 22.04"
+          echo "::notice::     Shape: VM.Standard.A1.Flex"
+          echo "::notice::"
+          echo "::notice::  PASOS DE CONFIGURACION:"
+          echo "::notice::  1. Instalar herramientas en la VM:"
+          echo "::notice::     - Docker: https://docs.docker.com/engine/install/"
+          echo "::notice::     - kubectl: https://kubernetes.io/docs/tasks/tools/"
+          echo "::notice::     - OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm"
+          echo "::notice::"
+          echo "::notice::  2. Crear cluster OKE (Oracle Container Engine for Kubernetes):"
+          echo "::notice::     oci ce cluster create \\"
+          echo "::notice::       --name finance-report-cluster \\"
+          echo "::notice::       --compartment-id <compartment_ocid> \\"
+          echo "::notice::       --vcn-id <vcn_ocid> \\"
+          echo "::notice::       --kubernetes-version v1.29 \\"
+          echo "::notice::       --service-lb-subnet-ids '[\"<subnet_ocid>\"]'"
+          echo "::notice::"
+          echo "::notice::  3. Obtener kubeconfig:"
+          echo "::notice::     oci ce cluster create-kubeconfig \\"
+          echo "::notice::       --cluster-id <cluster_ocid> \\"
+          echo "::notice::       --file kubeconfig.yaml \\"
+          echo "::notice::       --region us-ashburn-1"
+          echo "::notice::"
+          echo "::notice::  4. Configurar KUBE_CONFIG secret en GitHub:"
+          echo "::notice::     cat kubeconfig.yaml | base64 -w0"
+          echo "::notice::     Copiar output y crear secret KUBE_CONFIG en GitHub"
+          echo "::notice::"
+          echo "::notice::  5. Descomentar 'if: false' en este job para activar el despliegue"
+          echo "::notice::"
+          echo "::notice::  MANIFIESTOS KUBERNETES:"
+          echo "::notice::  Los manifiestos en k8s/ se aplican en orden:"
+          echo "::notice::    - k8s/namespace.yaml             → namespace finance-report"
+          echo "::notice::    - k8s/network-policy.yaml        → restricciones de red"
+          echo "::notice::    - k8s/configmap.yaml             → variables de configuracion"
+          echo "::notice::    - k8s/secrets.yaml               → secretos (JWT, DB, APIs)"
+          echo "::notice::    - k8s/rabbitmq-deployment.yaml   → RabbitMQ + Service + PVC"
+          echo "::notice::    - k8s/deployment-backend.yaml    → API Gateway FastAPI"
+          echo "::notice::    - k8s/deployment-workers.yaml    → Workers (extract, classify, notify)"
+          echo "::notice::    - k8s/service-backend.yaml       → service ClusterIP :80→8000"
+          echo "::notice::    - k8s/hpa.yaml                   → HorizontalPodAutoscaler (4 HPAs)"
+          echo "::notice::    - k8s/pdb.yaml                   → PodDisruptionBudget"
+          echo "::notice::    - k8s/ingress.yaml               → ingress NGINX + TLS (Let's Encrypt)"
+          echo "::notice::==================================================================="
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+          echo "KUBECONFIG=kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/network-policy.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/secrets.yaml
+          kubectl apply -f k8s/rabbitmq-deployment.yaml
+          kubectl apply -f k8s/deployment-backend.yaml
+          kubectl apply -f k8s/deployment-workers.yaml
+          kubectl apply -f k8s/service-backend.yaml
+          kubectl apply -f k8s/hpa.yaml
+          kubectl apply -f k8s/pdb.yaml
+          kubectl apply -f k8s/ingress.yaml
+          kubectl rollout status deployment/finance-backend -n finance-report --timeout=5m
+
+  # ============================================================
+  # 5. Smoke Tests — Verificar endpoints despues del despliegue
+  # ============================================================
+  smoke-tests:
+    name: "Smoke Tests"
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    if: false  # Descomentar cuando el ingress este configurado con dominio publico
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        env:
+          BASE_URL: ${{ vars.API_BASE_URL || 'http://localhost:8000' }}
+        run: |
+          echo "Ejecutando smoke tests contra $BASE_URL"
+          bash scripts/smoke-test.sh
+
+  # ============================================================
+  # 6. Notificacion de despliegue (Slack/Discord opcional)
+  # ============================================================
+  notify:
+    name: "Notificar despliegue"
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Deployment status
+        run: |
+          echo "::notice::Despliegue completado en ${{ github.ref }}"
+          echo "::notice::Frontend: https://financereport.app"
+          echo "::notice::Backend:  https://api.financereport.app"
+          echo "::notice::Health:   https://api.financereport.app/health"

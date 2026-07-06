@@ -1,0 +1,17 @@
+"""Modulo de observabilidad — OpenTelemetry tracing, metrics y logging.
+
+Inicializa el SDK de OpenTelemetry con:
+- Traces: propagacion W3C Trace Context, export OTLP a Grafana Cloud
+- Metrics: Prometheus endpoint (/metrics), system metrics
+- Logs: integracion structlog → OTLP (via logging bridge)
+
+Metricas Prometheus para feat-003:
+- extracts_duplicated_total: contador de extractos duplicados
+  - label detection_method: "preflight" | "race_condition"
+- extracts_uploaded_total: contador de extractos cargados
+- extracts_upload_errors_total: contador de errores por codigo
+"""
+
+from src.infrastructure.observability.otel import init_observability, shutdown_observability
+
+__all__ = ["init_observability", "shutdown_observability"]

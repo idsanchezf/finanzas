@@ -1,0 +1,2 @@
+"""ExtractoRepository unit tests."""
+

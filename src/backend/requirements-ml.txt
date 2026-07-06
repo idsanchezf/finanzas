@@ -1,0 +1,11 @@
+# Finance Report — ML/AI Dependencies (torch, CUDA, NLP, LLM)
+# Solo instalar cuando se necesite clasificacion ML o asistente IA
+# Usar: pip install -r requirements-ml.txt
+
+# ML / NLP (~3 GB con CUDA)
+scikit-learn>=1.5.0
+sentence-transformers>=3.2.0
+
+# LLM
+google-generativeai>=0.8.0
+groq>=0.11.0
