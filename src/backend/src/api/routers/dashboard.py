@@ -65,7 +65,7 @@ async def dashboard_summary(
     try:
         result = await query_handler.handle_dashboard_summary(query)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
     # Guardar en cache
     await _try_set_cache(redis, "set_dashboard_summary", user_id, extract_id, result, 60)
