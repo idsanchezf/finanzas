@@ -132,7 +132,7 @@ jobs:
 
       - name: Run all tests
         run: |
-          pytest tests/ \
+          PYTHONPATH=src pytest tests/ \
             --cov=src \
             --cov-report=xml:coverage/coverage.xml \
             --cov-report=term-missing \
