@@ -37,7 +37,8 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.dev.ConsoleRenderer() if os.getenv("ENVIRONMENT") == "development"
+        structlog.dev.ConsoleRenderer()
+        if os.getenv("ENVIRONMENT") == "development"
         else structlog.processors.JSONRenderer(),
     ],
     context_class=dict,
@@ -51,11 +52,10 @@ logger = structlog.get_logger(__name__)
 # Inicializar OpenTelemetry (traces + metrics) si esta configurado
 try:
     from src.infrastructure.observability.otel import init_observability
+
     init_observability()
 except Exception as e:
-    logging.getLogger(__name__).warning(
-        f"No se pudo inicializar OpenTelemetry: {e}"
-    )
+    logging.getLogger(__name__).warning(f"No se pudo inicializar OpenTelemetry: {e}")
 
 
 # ============================================================
@@ -170,6 +170,7 @@ async def health_readiness():
     # Verificar Redis
     try:
         from src.infrastructure.cache.redis_client import get_redis_client
+
         redis = await get_redis_client()
         await redis.client.ping()
         checks["redis"] = True
@@ -179,12 +180,16 @@ async def health_readiness():
     # Verificar RabbitMQ
     try:
         from src.infrastructure.messaging.rabbitmq import get_event_bus
+
         event_bus = await get_event_bus()
         if event_bus is not None:
             # Verificar que la conexion este viva
-            if hasattr(event_bus, "is_connected") and event_bus.is_connected:
-                checks["rabbitmq"] = True
-            elif hasattr(event_bus, "connection") and event_bus.connection:
+            if (
+                hasattr(event_bus, "is_connected")
+                and event_bus.is_connected
+                or hasattr(event_bus, "connection")
+                and event_bus.connection
+            ):
                 checks["rabbitmq"] = True
             else:
                 # Intentar un check basico de conexion
@@ -195,6 +200,7 @@ async def health_readiness():
     # Verificar Cloudflare R2
     try:
         from src.infrastructure.storage.r2_storage import get_storage
+
         storage = get_storage()
         if storage is not None:
             # Verificar que el bucket existe (head_bucket)

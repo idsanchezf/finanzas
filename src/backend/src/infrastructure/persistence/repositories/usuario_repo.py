@@ -28,9 +28,7 @@ class UsuarioRepository(IUsuarioRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_auth_provider(
-        self, provider: str, provider_id: str
-    ) -> UsuarioModel | None:
+    async def get_by_auth_provider(self, provider: str, provider_id: str) -> UsuarioModel | None:
         stmt = select(UsuarioModel).where(
             UsuarioModel.auth_provider == provider,
             UsuarioModel.auth_provider_id == provider_id,
@@ -47,7 +45,9 @@ class UsuarioRepository(IUsuarioRepository):
                 email=usuario.email,
                 nombre=usuario.nombre,
                 avatar_url=usuario.avatar_url,
-                auth_provider=usuario.auth_provider.value if hasattr(usuario.auth_provider, "value") else usuario.auth_provider,
+                auth_provider=usuario.auth_provider.value
+                if hasattr(usuario.auth_provider, "value")
+                else usuario.auth_provider,
                 auth_provider_id=usuario.auth_provider_id,
                 tfa_enabled=usuario.tfa_enabled,
                 preferencias_json=usuario.preferencias,

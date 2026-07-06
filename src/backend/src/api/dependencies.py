@@ -125,21 +125,25 @@ async def get_query_handler(
 # ============================================================
 async def get_redis() -> Any:
     from src.infrastructure.cache.redis_client import get_redis_client
+
     return await get_redis_client()
 
 
 async def get_storage_client() -> Any:
     from src.infrastructure.storage.r2_storage import get_storage
+
     return get_storage()
 
 
 async def get_gemini() -> Any:
     from src.infrastructure.llm.gemini_client import get_gemini_client
+
     return get_gemini_client()
 
 
 async def get_event_bus_dep() -> Any:
     from src.infrastructure.messaging.rabbitmq import get_event_bus
+
     return await get_event_bus()
 
 

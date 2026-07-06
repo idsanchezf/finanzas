@@ -104,19 +104,17 @@ class CalculadorCuotas:
             if cuotas_restantes <= 0:
                 continue
 
-            cuota_mensual = CalculadorCuotas.calcular_cuota_mensual(
-                monto, cuotas_totales, tasa
-            )
+            cuota_mensual = CalculadorCuotas.calcular_cuota_mensual(monto, cuotas_totales, tasa)
             capital_pendiente = cuota_mensual * cuotas_restantes
-            interes_pagado = (
-                CalculadorCuotas.calcular_interes_total(monto, cuotas_totales, tasa)
-                * (cuota_actual / cuotas_totales)
-            )
+            interes_pagado = CalculadorCuotas.calcular_interes_total(
+                monto, cuotas_totales, tasa
+            ) * (cuota_actual / cuotas_totales)
 
             # Fecha estimada de liberacion
             fecha_transaccion = t.get("fecha")
             if fecha_transaccion and isinstance(fecha_transaccion, date):
                 from dateutil.relativedelta import relativedelta
+
                 fecha_liberacion = fecha_transaccion + relativedelta(months=cuotas_totales)
             else:
                 fecha_liberacion = None

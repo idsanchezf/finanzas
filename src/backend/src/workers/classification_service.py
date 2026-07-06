@@ -142,12 +142,14 @@ class ClassificationService:
                 if categoria_id is not None:
                     classified_count += 1
 
-                results.append({
-                    "transaction_id": txn_id,
-                    "category_id": categoria_id,
-                    "confidence": Decimal(str(round(confidence, 2))),
-                    "source": source,
-                })
+                results.append(
+                    {
+                        "transaction_id": txn_id,
+                        "category_id": categoria_id,
+                        "confidence": Decimal(str(round(confidence, 2))),
+                        "source": source,
+                    }
+                )
 
                 # 4. Actualizar progreso periodicamente
                 if (idx + 1) % 10 == 0 or (idx + 1) == total:
@@ -164,7 +166,10 @@ class ClassificationService:
 
             logger.info(
                 "Clasificacion completada: extract_id=%s total=%d classified=%d unclassified=%d",
-                str(extract_id), total, classified_count, total - classified_count,
+                str(extract_id),
+                total,
+                classified_count,
+                total - classified_count,
             )
 
         return results

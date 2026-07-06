@@ -53,7 +53,9 @@ class GoogleOAuthService:
         payload = response.json()
 
         if "error" in payload:
-            raise Exception(f"Google tokeninfo error: {payload.get('error_description', payload['error'])}")
+            raise Exception(
+                f"Google tokeninfo error: {payload.get('error_description', payload['error'])}"
+            )
 
         return payload
 

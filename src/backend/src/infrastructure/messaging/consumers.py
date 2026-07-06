@@ -78,7 +78,9 @@ class BaseConsumer(ABC):
 
                 logger.debug(
                     "Mensaje recibido en %s: event=%s msg_id=%s",
-                    self.queue_name, event_name, message.message_id,
+                    self.queue_name,
+                    event_name,
+                    message.message_id,
                 )
 
                 await self.process_message(body, message.headers)
@@ -236,14 +238,13 @@ class ClassificationConsumer(BaseConsumer):
         try:
             extract_uuid = UUID(extract_id) if isinstance(extract_id, str) else extract_id
             user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
-            txn_ids = [
-                UUID(tid) if isinstance(tid, str) else tid
-                for tid in transaction_ids
-            ]
+            txn_ids = [UUID(tid) if isinstance(tid, str) else tid for tid in transaction_ids]
         except (ValueError, TypeError) as e:
             logger.error(
                 "IDs invalidos en el mensaje: error=%s extract_id=%s user_id=%s",
-                str(e), str(extract_id), str(user_id),
+                str(e),
+                str(extract_id),
+                str(user_id),
             )
             return
 
@@ -251,7 +252,9 @@ class ClassificationConsumer(BaseConsumer):
 
         logger.info(
             "Clasificando transacciones: extract_id=%s count=%d user_id=%s",
-            str(extract_uuid), transaction_count, str(user_uuid),
+            str(extract_uuid),
+            transaction_count,
+            str(user_uuid),
         )
 
         if self._service is None:
@@ -277,13 +280,15 @@ class ClassificationConsumer(BaseConsumer):
         # Log de resultados
         classified = sum(1 for r in results if r["category_id"] is not None)
         low_confidence = sum(
-            1 for r in results
-            if r["category_id"] is not None and r["confidence"] < 70
+            1 for r in results if r["category_id"] is not None and r["confidence"] < 70
         )
 
         logger.info(
             "Clasificacion completada via RabbitMQ: extract_id=%s total=%d classified=%d low_confidence=%d",
-            str(extract_uuid), transaction_count, classified, low_confidence,
+            str(extract_uuid),
+            transaction_count,
+            classified,
+            low_confidence,
         )
 
 

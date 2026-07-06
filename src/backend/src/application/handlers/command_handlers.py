@@ -22,7 +22,6 @@ from src.application.commands import (
     CrearMetaAhorroCommand,
     CrearPresupuestoCommand,
 )
-
 from src.domain.entities.categoria import Categoria
 from src.domain.entities.extracto import Extracto
 from src.domain.entities.meta_ahorro import MetaAhorro
@@ -65,9 +64,7 @@ class CommandHandler:
         self.usuario_repo = usuario_repo
         self.event_bus = event_bus
 
-    async def handle_cargar_extracto(
-        self, cmd: CargarExtractoCommand
-    ) -> dict[str, Any]:
+    async def handle_cargar_extracto(self, cmd: CargarExtractoCommand) -> dict[str, Any]:
         """Procesa la carga de un extracto bancario.
 
         Flujo completo:
@@ -108,6 +105,7 @@ class CommandHandler:
                 from src.infrastructure.observability.metrics import (
                     record_extract_duplicated,
                 )
+
                 record_extract_duplicated("file_hash_preparseo")
             except ImportError:
                 pass
@@ -175,7 +173,7 @@ class CommandHandler:
             if parse_result.transacciones:
                 for t_data in parse_result.transacciones:
                     valor = t_data.get("valor", Decimal("0.00"))
-                    if isinstance(valor, (int, float)):
+                    if isinstance(valor, int | float):
                         valor = Decimal(str(valor))
 
                     tx = Transaccion(
@@ -217,8 +215,7 @@ class CommandHandler:
         # Fix #2: Si el periodo no es detectable, permitir carga pero solo
         # con proteccion por hash (sin chequeo por periodo). Se emite WARN.
         periodo_detectable = (
-            extracto.periodo_inicio is not None
-            and extracto.periodo_fin is not None
+            extracto.periodo_inicio is not None and extracto.periodo_fin is not None
         )
         if not periodo_detectable:
             logger.warning(
@@ -270,6 +267,7 @@ class CommandHandler:
                     from src.infrastructure.observability.metrics import (
                         record_extract_duplicated,
                     )
+
                     record_extract_duplicated("preflight")
                 except ImportError:
                     pass
@@ -313,6 +311,7 @@ class CommandHandler:
                 from src.infrastructure.observability.metrics import (
                     record_extract_duplicated,
                 )
+
                 record_extract_duplicated("race_condition")
             except ImportError:
                 pass
@@ -335,7 +334,12 @@ class CommandHandler:
                 record_extract_uploaded,
                 record_transaction_processed,
             )
-            record_extract_uploaded(banco=parse_result.metadatos.get("banco", "desconocido") if parse_result else "desconocido")
+
+            record_extract_uploaded(
+                banco=parse_result.metadatos.get("banco", "desconocido")
+                if parse_result
+                else "desconocido"
+            )
             for _ in range(transaction_count):
                 record_transaction_processed()
         except ImportError:
@@ -348,12 +352,16 @@ class CommandHandler:
             filename=cmd.filename,
             file_hash=file_hash[:16] + "...",
             transacciones=transaction_count,
-            estado=extracto.estado.value if hasattr(extracto.estado, "value") else str(extracto.estado),
+            estado=extracto.estado.value
+            if hasattr(extracto.estado, "value")
+            else str(extracto.estado),
         )
 
         return {
             "extract_id": str(extracto.id),
-            "estado": extracto.estado.value if hasattr(extracto.estado, "value") else str(extracto.estado),
+            "estado": extracto.estado.value
+            if hasattr(extracto.estado, "value")
+            else str(extracto.estado),
             "progress_pct": extracto.progress_pct,
             "transacciones_count": transaction_count,
             "parse_errors": parse_errors,
@@ -368,7 +376,7 @@ class CommandHandler:
             raise ValueError(f"Transaccion {cmd.transaccion_id} no encontrada")
 
         # Obtener categorias y clasificar
-        categorias = await self.categoria_repo.get_all(cmd.usuario_id)
+        await self.categoria_repo.get_all(cmd.usuario_id)
         # La clasificacion real se delega al motor de clasificacion (infraestructura)
         # Aqui solo se actualiza el estado
 
@@ -420,9 +428,7 @@ class CommandHandler:
 
         return {"updated_count": updated}
 
-    async def handle_corregir_categoria(
-        self, cmd: CorregirCategoriaCommand
-    ) -> dict[str, Any]:
+    async def handle_corregir_categoria(self, cmd: CorregirCategoriaCommand) -> dict[str, Any]:
         """Corrige la categoria de una transaccion (aprendizaje supervisado).
 
         1. Obtiene la transaccion como entidad de dominio.
@@ -459,9 +465,7 @@ class CommandHandler:
             "confidence": float(transaccion.confidence) if transaccion.confidence else 100.0,
         }
 
-    async def handle_crear_categoria(
-        self, cmd: CrearCategoriaCommand
-    ) -> dict[str, Any]:
+    async def handle_crear_categoria(self, cmd: CrearCategoriaCommand) -> dict[str, Any]:
         """Crea una categoria o subcategoria personalizada."""
         categoria = Categoria(
             nombre=cmd.nombre,
@@ -474,9 +478,7 @@ class CommandHandler:
         saved = await self.categoria_repo.save(categoria)
         return {"id": str(saved.id), "nombre": saved.nombre}
 
-    async def handle_crear_presupuesto(
-        self, cmd: CrearPresupuestoCommand
-    ) -> dict[str, Any]:
+    async def handle_crear_presupuesto(self, cmd: CrearPresupuestoCommand) -> dict[str, Any]:
         """Crea un presupuesto mensual por categoria."""
         if cmd.limite_mensual <= 0:
             raise ValueError("El limite mensual debe ser mayor a 0")
@@ -491,9 +493,7 @@ class CommandHandler:
         saved = await self.presupuesto_repo.save(presupuesto)
         return {"id": str(saved.id), "limite_mensual": str(saved.limite_mensual)}
 
-    async def handle_crear_meta(
-        self, cmd: CrearMetaAhorroCommand
-    ) -> dict[str, Any]:
+    async def handle_crear_meta(self, cmd: CrearMetaAhorroCommand) -> dict[str, Any]:
         """Crea una meta de ahorro."""
         if cmd.monto_objetivo <= 0:
             raise ValueError("El monto objetivo debe ser mayor a 0")
@@ -505,4 +505,8 @@ class CommandHandler:
             fecha_deseada=cmd.fecha_deseada,
         )
         # Nota: El repositorio de meta ahorro se implementaria en infraestructura
-        return {"id": str(meta.id), "nombre": meta.nombre, "monto_objetivo": str(meta.monto_objetivo)}
+        return {
+            "id": str(meta.id),
+            "nombre": meta.nombre,
+            "monto_objetivo": str(meta.monto_objetivo),
+        }

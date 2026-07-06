@@ -23,6 +23,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+import contextlib
+
 from src.infrastructure.messaging.consumers import ClassificationConsumer
 from src.workers.classification_service import ClassificationService
 
@@ -44,6 +46,7 @@ RABBITMQ_DEFAULT_URL = "amqp://guest:guest@localhost:5672/"
 # ============================================================
 # Modo RabbitMQ
 # ============================================================
+
 
 class RabbitMQClassificationWorker:
     """Worker que consume via RabbitMQ y clasifica transacciones."""
@@ -75,6 +78,7 @@ class RabbitMQClassificationWorker:
 # Modo Polling (fallback sin RabbitMQ)
 # ============================================================
 
+
 class PollingClassificationWorker:
     """Worker que revisa la BD cada 5s en busca de transacciones sin clasificar.
 
@@ -105,10 +109,8 @@ class PollingClassificationWorker:
         self._running = False
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
         logger.info("Polling worker detenido")
 
     async def _poll_loop(self) -> None:
@@ -162,6 +164,7 @@ class PollingClassificationWorker:
 # ============================================================
 # Entry point
 # ============================================================
+
 
 async def create_service() -> ClassificationService:
     """Crea el ClassificationService con la sesion de BD configurada."""

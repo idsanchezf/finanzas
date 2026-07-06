@@ -46,6 +46,7 @@ logging.basicConfig(
 # RabbitMQ Mode
 # ============================================================
 
+
 async def run_rabbitmq_mode(
     rabbitmq_url: str,
     storage: R2Storage,
@@ -77,6 +78,7 @@ async def run_rabbitmq_mode(
 # ============================================================
 # Polling Mode (fallback sin RabbitMQ)
 # ============================================================
+
 
 async def run_polling_mode(
     poll_interval: int,
@@ -165,6 +167,7 @@ async def run_polling_mode(
 # Deteccion de disponibilidad de RabbitMQ
 # ============================================================
 
+
 async def check_rabbitmq_available(url: str) -> bool:
     """Verifica si RabbitMQ esta disponible intentando una conexion."""
     import aio_pika
@@ -174,15 +177,14 @@ async def check_rabbitmq_available(url: str) -> bool:
         await connection.close()
         return True
     except Exception:
-        logger.warning(
-            f"RabbitMQ no disponible en {url}. Usando modo polling como fallback."
-        )
+        logger.warning(f"RabbitMQ no disponible en {url}. Usando modo polling como fallback.")
         return False
 
 
 # ============================================================
 # Entry point
 # ============================================================
+
 
 async def main() -> None:
     """Entry point del worker de procesamiento de extractos.

@@ -32,7 +32,9 @@ class ExtractoDTO:
         return cls(
             id=extracto.id,
             tarjeta_id=extracto.tarjeta_id,
-            estado=extracto.estado.value if hasattr(extracto.estado, "value") else str(extracto.estado),
+            estado=extracto.estado.value
+            if hasattr(extracto.estado, "value")
+            else str(extracto.estado),
             periodo_inicio=extracto.periodo_inicio,
             periodo_fin=extracto.periodo_fin,
             fecha_corte=extracto.fecha_corte,

@@ -112,7 +112,8 @@ class ExtractoRepository(IExtractoRepository):
 
         Maneja la conversion de Value Objects Money a Decimal para los campos monetarios.
         """
-        _amount = lambda v: v.amount if hasattr(v, "amount") else v
+        def _amount(v):
+            return v.amount if hasattr(v, "amount") else v
 
         return ExtractoModel(
             id=entity.id,

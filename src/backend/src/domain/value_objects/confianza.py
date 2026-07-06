@@ -8,9 +8,9 @@ from enum import Enum
 
 
 class NivelConfianza(str, Enum):
-    ALTA = "HIGH"      # >90%
-    MEDIA = "MEDIUM"   # 70-90%
-    BAJA = "LOW"       # <70%
+    ALTA = "HIGH"  # >90%
+    MEDIA = "MEDIUM"  # 70-90%
+    BAJA = "LOW"  # <70%
 
 
 @dataclass(frozen=True)

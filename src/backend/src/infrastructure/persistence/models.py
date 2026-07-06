@@ -41,9 +41,7 @@ class Base(DeclarativeBase):
 class UsuarioModel(Base):
     __tablename__ = "usuarios"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
@@ -52,9 +50,7 @@ class UsuarioModel(Base):
     tfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     tfa_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     preferencias_json: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -77,22 +73,14 @@ class UsuarioModel(Base):
 class RefreshTokenModel(Base):
     __tablename__ = "refresh_tokens"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
-    token_jti: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
-    )
-    expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    token_jti: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     usuario: Mapped[UsuarioModel] = relationship(back_populates="refresh_tokens", lazy="joined")
@@ -109,9 +97,7 @@ class RefreshTokenModel(Base):
 class TarjetaModel(Base):
     __tablename__ = "tarjetas"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
@@ -120,9 +106,7 @@ class TarjetaModel(Base):
     tipo: Mapped[str] = mapped_column(String(20), nullable=False)
     alias: Mapped[str | None] = mapped_column(String(100), nullable=True)
     activa: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     usuario: Mapped[UsuarioModel] = relationship(back_populates="tarjetas")
@@ -135,9 +119,7 @@ class TarjetaModel(Base):
 class ExtractoModel(Base):
     __tablename__ = "extractos"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tarjeta_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tarjetas.id", ondelete="CASCADE"), nullable=False
     )
@@ -159,9 +141,7 @@ class ExtractoModel(Base):
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     tarjeta: Mapped[TarjetaModel] = relationship(back_populates="extractos")
@@ -172,11 +152,14 @@ class ExtractoModel(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "tarjeta_id", "periodo_inicio", "periodo_fin",
+            "tarjeta_id",
+            "periodo_inicio",
+            "periodo_fin",
             name="uq_extracto_tarjeta_periodo",
         ),
         UniqueConstraint(
-            "tarjeta_id", "file_hash",
+            "tarjeta_id",
+            "file_hash",
             name="uq_extracto_tarjeta_file_hash",
         ),
         Index("ix_extractos_usuario_estado", "usuario_id", "estado"),
@@ -191,9 +174,7 @@ class ExtractoModel(Base):
 class TransaccionModel(Base):
     __tablename__ = "transacciones"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     extracto_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("extractos.id", ondelete="CASCADE"), nullable=False
     )
@@ -223,9 +204,7 @@ class TransaccionModel(Base):
     parent_transaccion_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("transacciones.id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     extracto: Mapped[ExtractoModel] = relationship(back_populates="transacciones")
@@ -269,9 +248,7 @@ class TransaccionModel(Base):
 class CategoriaModel(Base):
     __tablename__ = "categorias"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     icono: Mapped[str] = mapped_column(String(10), default="📁")
     color: Mapped[str] = mapped_column(String(7), default="#6B7280")
@@ -283,9 +260,7 @@ class CategoriaModel(Base):
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=True
     )
     palabras_clave: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     subcategorias: Mapped[list[CategoriaModel]] = relationship(
@@ -302,9 +277,7 @@ class CategoriaModel(Base):
 class PresupuestoModel(Base):
     __tablename__ = "presupuestos"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
@@ -315,9 +288,7 @@ class PresupuestoModel(Base):
     alerta_80pct: Mapped[bool] = mapped_column(Boolean, default=True)
     alerta_100pct: Mapped[bool] = mapped_column(Boolean, default=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint("usuario_id", "categoria_id", name="uq_presupuesto_usuario_categoria"),
@@ -331,9 +302,7 @@ class PresupuestoModel(Base):
 class MetaAhorroModel(Base):
     __tablename__ = "metas_ahorro"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
@@ -341,9 +310,7 @@ class MetaAhorroModel(Base):
     monto_objetivo: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     monto_acumulado: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0.00"))
     fecha_deseada: Mapped[date | None] = mapped_column(Date, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================
@@ -352,9 +319,7 @@ class MetaAhorroModel(Base):
 class TraduccionComercioModel(Base):
     __tablename__ = "traducciones_comercios"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre_original: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
     nombre_traducido: Mapped[str] = mapped_column(String(500), nullable=False)
     categoria_sugerida_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -365,9 +330,7 @@ class TraduccionComercioModel(Base):
     )
     votos: Mapped[int] = mapped_column(Integer, default=0)
     estado: Mapped[str] = mapped_column(String(20), default="pendiente")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ============================================================
@@ -376,9 +339,7 @@ class TraduccionComercioModel(Base):
 class NotificacionModel(Base):
     __tablename__ = "notificaciones"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
@@ -388,13 +349,9 @@ class NotificacionModel(Base):
     leida: Mapped[bool] = mapped_column(Boolean, default=False)
     canal: Mapped[str] = mapped_column(String(20), nullable=False, default="in_app")
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (
-        Index("ix_notificaciones_usuario_leida", "usuario_id", "leida"),
-    )
+    __table_args__ = (Index("ix_notificaciones_usuario_leida", "usuario_id", "leida"),)
 
 
 # ============================================================
@@ -403,16 +360,12 @@ class NotificacionModel(Base):
 class SesionChatModel(Base):
     __tablename__ = "sesiones_chat"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
     )
     titulo: Mapped[str] = mapped_column(String(200), default="Nueva conversacion")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     mensajes: Mapped[list[MensajeChatModel]] = relationship(
@@ -426,18 +379,14 @@ class SesionChatModel(Base):
 class MensajeChatModel(Base):
     __tablename__ = "mensajes_chat"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sesion_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("sesiones_chat.id", ondelete="CASCADE"), nullable=False
     )
     rol: Mapped[str] = mapped_column(String(20), nullable=False)  # user, assistant, system
     contenido: Mapped[str] = mapped_column(Text, nullable=False)
     tokens_usados: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     sesion: Mapped[SesionChatModel] = relationship(back_populates="mensajes")

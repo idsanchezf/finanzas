@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 # Tipos
 # ------------------------------------------------------------------
 
+
 @dataclass
 class ExtractMessage:
     """Mensaje recibido de la cola extract.uploaded / extractos.procesar.
@@ -85,6 +86,7 @@ class ProcessResult:
 # ------------------------------------------------------------------
 # Servicio
 # ------------------------------------------------------------------
+
 
 class ExtractProcessorService:
     """Servicio de procesamiento de extractos.
@@ -183,7 +185,6 @@ class ExtractProcessorService:
 
         # 5. Crear y persistir transacciones
         transaction_count = 0
-        transaccion_ids: list[UUID] = []
 
         if parse_result.transacciones:
             transaccion_entities: list[Transaccion] = []
@@ -193,7 +194,7 @@ class ExtractProcessorService:
 
             for t_data in parse_result.transacciones:
                 valor = t_data.get("valor", Decimal("0.00"))
-                if isinstance(valor, (int, float)):
+                if isinstance(valor, int | float):
                     valor = Decimal(str(valor))
 
                 tx = Transaccion(
@@ -219,7 +220,7 @@ class ExtractProcessorService:
             await self.transaccion_repo.bulk_save(transaccion_entities)
             await self._flush()
             transaction_count = len(transaccion_entities)
-            transaccion_ids = [tx.id for tx in transaccion_entities]
+            [tx.id for tx in transaccion_entities]
 
         # 6. Actualizar estado del extracto
         #    Flujo: PARSING → CLASSIFYING (este worker parsea y deja listo para clasificar)
@@ -299,9 +300,7 @@ class ExtractProcessorService:
     # Helpers privados
     # ============================================================
 
-    async def _obtener_contenido(
-        self, msg: ExtractMessage, extracto: Any
-    ) -> tuple[bytes, str]:
+    async def _obtener_contenido(self, msg: ExtractMessage, extracto: Any) -> tuple[bytes, str]:
         """Obtiene el contenido binario del archivo Excel.
 
         Prioridad:
@@ -388,7 +387,9 @@ class ExtractProcessorService:
                     meta.get("moneda", "COP"),
                 )
             except Exception:
-                logger.warning("No se pudo parsear cupo_disponible value=%s", meta.get("cupo_disponible"))
+                logger.warning(
+                    "No se pudo parsear cupo_disponible value=%s", meta.get("cupo_disponible")
+                )
 
         if hasattr(extracto, "metadatos"):
             extracto.metadatos = meta
@@ -416,7 +417,5 @@ class ExtractProcessorService:
 
     async def _flush(self) -> None:
         """Flush de cambios pendientes si el repositorio lo soporta."""
-        if hasattr(self.extracto_repo, "session") and hasattr(
-            self.extracto_repo.session, "flush"
-        ):
+        if hasattr(self.extracto_repo, "session") and hasattr(self.extracto_repo.session, "flush"):
             await self.extracto_repo.session.flush()

@@ -23,9 +23,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Generar o propagar correlation ID
-        correlation_id = request.headers.get(
-            "X-Correlation-ID", str(uuid.uuid4())
-        )
+        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
 
         # Agregar al contexto de structlog
         structlog.contextvars.bind_contextvars(

@@ -53,7 +53,7 @@ class RabbitMQEventBus:
         )
 
         # Declarar Dead Letter Exchange
-        dlq_exchange = await self._channel.declare_exchange(
+        await self._channel.declare_exchange(
             DLQ_EXCHANGE_NAME,
             aio_pika.ExchangeType.DIRECT,
             durable=True,
@@ -114,7 +114,9 @@ class RabbitMQEventBus:
             message_id=str(event.event_id),
             headers={
                 "event_name": event.__class__.__name__,
-                "occurred_at": event.occurred_at.isoformat() if hasattr(event, "occurred_at") else "",
+                "occurred_at": event.occurred_at.isoformat()
+                if hasattr(event, "occurred_at")
+                else "",
             },
         )
 
@@ -154,6 +156,7 @@ async def get_event_bus() -> RabbitMQEventBus:
     global _event_bus
     if _event_bus is None:
         import os
+
         url = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
         _event_bus = RabbitMQEventBus(url)
         await _event_bus.connect()

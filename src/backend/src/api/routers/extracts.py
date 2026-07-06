@@ -25,7 +25,9 @@ router = APIRouter()
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_extract(
     file: UploadFile = File(...),
-    tarjeta_id: str | None = Query(None, description="ID de la tarjeta (se auto-crea si no se envia)"),
+    tarjeta_id: str | None = Query(
+        None, description="ID de la tarjeta (se auto-crea si no se envia)"
+    ),
     user_id: str = Depends(get_current_user_id),
     command_handler: Any = Depends(get_command_handler),
     storage: Any = Depends(get_storage_client),
@@ -138,7 +140,9 @@ async def get_extract(
         "periodo_inicio": extracto.periodo_inicio.isoformat() if extracto.periodo_inicio else None,
         "periodo_fin": extracto.periodo_fin.isoformat() if extracto.periodo_fin else None,
         "fecha_corte": extracto.fecha_corte.isoformat() if extracto.fecha_corte else None,
-        "fecha_limite_pago": extracto.fecha_limite_pago.isoformat() if extracto.fecha_limite_pago else None,
+        "fecha_limite_pago": extracto.fecha_limite_pago.isoformat()
+        if extracto.fecha_limite_pago
+        else None,
         "pago_minimo": float(extracto.pago_minimo),
         "pago_total": float(extracto.pago_total),
         "cupo_total": float(extracto.cupo_total),

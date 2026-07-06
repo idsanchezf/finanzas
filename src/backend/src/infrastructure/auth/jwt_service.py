@@ -35,9 +35,7 @@ class JWTService:
     # Access Tokens
     # ================================================================
 
-    def generate_access_token(
-        self, user_id: str, email: str, nombre: str
-    ) -> str:
+    def generate_access_token(self, user_id: str, email: str, nombre: str) -> str:
         """Genera un access token JWT.
 
         Args:

@@ -45,9 +45,7 @@ class QueryHandler:
         self.transaccion_repo = transaccion_repo
         self.categoria_repo = categoria_repo
 
-    async def handle_dashboard_summary(
-        self, query: DashboardSummaryQuery
-    ) -> dict[str, Any]:
+    async def handle_dashboard_summary(self, query: DashboardSummaryQuery) -> dict[str, Any]:
         """Retorna los KPIs del dashboard para un extracto.
 
         Incluye:
@@ -102,9 +100,11 @@ class QueryHandler:
             )
             # Ordenar por periodo_inicio descendente y buscar el inmediatamente anterior
             otros = sorted(
-                [e for e in extractos_anteriores
-                 if e.id != query.extracto_id
-                 and e.periodo_inicio is not None],
+                [
+                    e
+                    for e in extractos_anteriores
+                    if e.id != query.extracto_id and e.periodo_inicio is not None
+                ],
                 key=lambda e: e.periodo_inicio,
                 reverse=True,
             )
@@ -114,9 +114,7 @@ class QueryHandler:
                 prev_gastos = [t for t in prev_trans if t.valor > 0 and not t.es_abono]
                 prev_total = sum(t.valor for t in prev_gastos)
                 if prev_total > 0:
-                    variacion_vs_anterior = float(
-                        ((total_gastado - prev_total) / prev_total) * 100
-                    )
+                    variacion_vs_anterior = float(((total_gastado - prev_total) / prev_total) * 100)
         except Exception:
             variacion_vs_anterior = 0.0
 
@@ -138,9 +136,7 @@ class QueryHandler:
             },
         }
 
-    async def handle_dashboard_by_category(
-        self, query: DashboardByCategoryQuery
-    ) -> dict[str, Any]:
+    async def handle_dashboard_by_category(self, query: DashboardByCategoryQuery) -> dict[str, Any]:
         """Retorna distribucion de gasto por categoria para grafico Donut.
 
         Solo incluye gastos (valor > 0, no abonos).
@@ -178,9 +174,7 @@ class QueryHandler:
             gastos_por_categoria[cat_id]["count"] += 1
 
         total_general = sum(c["total"] for c in gastos_por_categoria.values())
-        items = sorted(
-            gastos_por_categoria.values(), key=lambda x: x["total"], reverse=True
-        )
+        items = sorted(gastos_por_categoria.values(), key=lambda x: x["total"], reverse=True)
 
         top_items = items[: query.top_n]
         otros_items = items[query.top_n :]
@@ -205,9 +199,7 @@ class QueryHandler:
             },
         }
 
-    async def handle_dashboard_daily(
-        self, query: DashboardDailyQuery
-    ) -> dict[str, Any]:
+    async def handle_dashboard_daily(self, query: DashboardDailyQuery) -> dict[str, Any]:
         """Retorna gasto diario del periodo para grafico de Barras Apiladas.
 
         Solo incluye gastos (valor > 0, no abonos).
@@ -246,7 +238,7 @@ class QueryHandler:
         # Convertir por_categoria de dict a lista ordenada
         for dia_data in gastos_por_dia.values():
             dia_data["categorias"] = sorted(
-                list(dia_data["por_categoria"].values()),
+                dia_data["por_categoria"].values(),
                 key=lambda x: x["total"],
                 reverse=True,
             )
@@ -271,7 +263,9 @@ class QueryHandler:
         """
         # Consultar los ultimos N extractos del usuario
         extractos, _ = await self.extracto_repo.get_by_usuario(
-            query.usuario_id, page=1, size=query.meses * 2  # Pedir extras por filtro
+            query.usuario_id,
+            page=1,
+            size=query.meses * 2,  # Pedir extras por filtro
         )
 
         # Filtrar por tarjeta si se especifica
@@ -293,25 +287,28 @@ class QueryHandler:
             ingresos_list = [t for t in transacciones if t.valor < 0 or t.es_abono]
             ingresos = sum(abs(t.valor) for t in ingresos_list)
 
-            items.append({
-                "mes": e.periodo_inicio.strftime("%Y-%m"),
-                "extracto_id": str(e.id),
-                "periodo_inicio": e.periodo_inicio.isoformat(),
-                "periodo_fin": e.periodo_fin.isoformat() if e.periodo_fin else None,
-                "gastos": float(gastos),
-                "ingresos": float(ingresos),
-                "transacciones_count": len(gastos_list),
-                "saldo_neto": float(ingresos - gastos),
-            })
+            items.append(
+                {
+                    "mes": e.periodo_inicio.strftime("%Y-%m"),
+                    "extracto_id": str(e.id),
+                    "periodo_inicio": e.periodo_inicio.isoformat(),
+                    "periodo_fin": e.periodo_fin.isoformat() if e.periodo_fin else None,
+                    "gastos": float(gastos),
+                    "ingresos": float(ingresos),
+                    "transacciones_count": len(gastos_list),
+                    "saldo_neto": float(ingresos - gastos),
+                }
+            )
 
         # Ordenar cronologicamente y limitar a los ultimos N meses
         items.sort(key=lambda x: x["mes"])
-        items = items[-query.meses:]
+        items = items[-query.meses :]
 
         # Promedio movil de los ultimos 3 meses
         gastos_items = [i["gastos"] for i in items]
         promedio_movil_3m = (
-            sum(gastos_items[-3:]) / 3 if len(gastos_items) >= 3
+            sum(gastos_items[-3:]) / 3
+            if len(gastos_items) >= 3
             else (sum(gastos_items) / len(gastos_items) if gastos_items else 0)
         )
 
@@ -376,9 +373,7 @@ class QueryHandler:
             "size": query.size,
         }
 
-    async def handle_obtener_extractos(
-        self, query: ObtenerExtractosQuery
-    ) -> dict[str, Any]:
+    async def handle_obtener_extractos(self, query: ObtenerExtractosQuery) -> dict[str, Any]:
         """Retorna lista de extractos del usuario."""
         items, total = await self.extracto_repo.get_by_usuario(
             query.usuario_id, page=query.page, size=query.size
@@ -402,9 +397,7 @@ class QueryHandler:
             "size": query.size,
         }
 
-    async def handle_obtener_insights(
-        self, query: ObtenerInsightsQuery
-    ) -> dict[str, Any]:
+    async def handle_obtener_insights(self, query: ObtenerInsightsQuery) -> dict[str, Any]:
         """Retorna alertas y habitos detectados para el periodo."""
         # El calculo real lo hace el DetectorHabitos del dominio
         # En produccion, los insights se pre-calculan en el worker de clasificacion

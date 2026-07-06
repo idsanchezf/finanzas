@@ -9,10 +9,9 @@ Incluye:
 from __future__ import annotations
 
 import logging
-from typing import Any
 
-from prometheus_client import Counter, Gauge, Histogram, generate_latest
 from prometheus_client import REGISTRY as PROMETHEUS_REGISTRY
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +94,7 @@ duplicate_detection_rate = Gauge(
 # ============================================================
 # Helpers para incrementar contadores
 # ============================================================
+
 
 def record_extract_duplicated(detection_method: str) -> None:
     """Registra un intento de carga de extracto duplicado.

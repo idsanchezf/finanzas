@@ -2,6 +2,7 @@
 
 Sin dependencias externas. Contiene la logica de negocio pura.
 """
+
 from src.domain.entities import (
     Categoria,
     Extracto,

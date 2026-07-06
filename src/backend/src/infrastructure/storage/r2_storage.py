@@ -166,11 +166,13 @@ class R2Storage:
                 if f.is_file():
                     rel = str(f.relative_to(base))
                     if rel.startswith(prefix):
-                        results.append({
-                            "key": rel,
-                            "size": f.stat().st_size,
-                            "last_modified": f.stat().st_mtime,
-                        })
+                        results.append(
+                            {
+                                "key": rel,
+                                "size": f.stat().st_size,
+                                "last_modified": f.stat().st_mtime,
+                            }
+                        )
             return results
 
         response = self.client.list_objects_v2(Bucket=bucket, Prefix=prefix)

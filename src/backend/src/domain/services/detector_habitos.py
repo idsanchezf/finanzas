@@ -14,14 +14,14 @@ from typing import Any
 class TipoHabito(str, Enum):
     """Tipos de malos habitos financieros detectables."""
 
-    SUSCRIPCION_FANTASMA = "suscripcion_fantasma"        # RF04.1
-    GASTO_HORMIGA = "gasto_hormiga"                       # RF04.2
-    EXCESO_CATEGORIA = "exceso_categoria"                  # RF04.3
-    COMPRAS_IMPULSIVAS = "compras_impulsivas"             # RF04.4
-    CRECIMIENTO_GASTO = "crecimiento_gasto"               # RF04.5
-    ALTO_ENDEUDAMIENTO = "alto_endeudamiento"             # RF04.6
+    SUSCRIPCION_FANTASMA = "suscripcion_fantasma"  # RF04.1
+    GASTO_HORMIGA = "gasto_hormiga"  # RF04.2
+    EXCESO_CATEGORIA = "exceso_categoria"  # RF04.3
+    COMPRAS_IMPULSIVAS = "compras_impulsivas"  # RF04.4
+    CRECIMIENTO_GASTO = "crecimiento_gasto"  # RF04.5
+    ALTO_ENDEUDAMIENTO = "alto_endeudamiento"  # RF04.6
     GASTOS_FINANCIEROS_ALTOS = "gastos_financieros_altos"  # RF04.7
-    DISMINUCION_INGRESOS = "disminucion_ingresos"         # RF04.8
+    DISMINUCION_INGRESOS = "disminucion_ingresos"  # RF04.8
 
 
 class Severidad(str, Enum):
@@ -54,9 +54,9 @@ class DetectorHabitos:
     UMBRAL_GASTO_HORMIGA_VALOR = Decimal("15.00")
     UMBRAL_GASTO_HORMIGA_FRECUENCIA = 5
     UMBRAL_EXCESO_CATEGORIA_PCT = Decimal("150")  # 150% del promedio
-    UMBRAL_CRECIMIENTO_PCT = Decimal("20")        # 20% de crecimiento
-    UMBRAL_ENDEUDAMIENTO_PCT = Decimal("40")       # 40% de ingresos
-    UMBRAL_FINANCIEROS_PCT = Decimal("10")          # 10% del total gastado
+    UMBRAL_CRECIMIENTO_PCT = Decimal("20")  # 20% de crecimiento
+    UMBRAL_ENDEUDAMIENTO_PCT = Decimal("40")  # 40% de ingresos
+    UMBRAL_FINANCIEROS_PCT = Decimal("10")  # 10% del total gastado
 
     def detectar_todos(
         self,
@@ -87,9 +87,7 @@ class DetectorHabitos:
     # ---------------------------------------------------------------
     # RF04.1 — Suscripciones fantasma
     # ---------------------------------------------------------------
-    def detectar_suscripciones_fantasma(
-        self, transacciones: list[dict]
-    ) -> list[AlertaHabito]:
+    def detectar_suscripciones_fantasma(self, transacciones: list[dict]) -> list[AlertaHabito]:
         """Detecta cargos recurrentes que el usuario podria haber olvidado cancelar.
 
         Busca comercios que aparecen 3+ meses consecutivos con montos similares.
@@ -118,15 +116,14 @@ class DetectorHabitos:
     # ---------------------------------------------------------------
     # RF04.2 — Gasto hormiga (micropagos frecuentes)
     # ---------------------------------------------------------------
-    def detectar_gasto_hormiga(
-        self, transacciones: list[dict]
-    ) -> list[AlertaHabito]:
+    def detectar_gasto_hormiga(self, transacciones: list[dict]) -> list[AlertaHabito]:
         """Detecta multiples gastos pequeños que suman un monto significativo.
 
         Transacciones < $15,000 COP que ocurren 5+ veces en el periodo.
         """
         gastos_pequenos = [
-            t for t in transacciones
+            t
+            for t in transacciones
             if abs(Decimal(str(t.get("valor", 0)))) < self.UMBRAL_GASTO_HORMIGA_VALOR
         ]
         if len(gastos_pequenos) >= self.UMBRAL_GASTO_HORMIGA_FRECUENCIA:
@@ -179,19 +176,14 @@ class DetectorHabitos:
     # ---------------------------------------------------------------
     # RF04.4 — Compras impulsivas (altas en horarios no habituales)
     # ---------------------------------------------------------------
-    def detectar_compras_impulsivas(
-        self, transacciones: list[dict]
-    ) -> list[AlertaHabito]:
+    def detectar_compras_impulsivas(self, transacciones: list[dict]) -> list[AlertaHabito]:
         """Detecta compras de alto valor en categorias de entretenimiento/ocio."""
         # Simplificado: busca transacciones grandes en categorias de entretenimiento
         alertas: list[AlertaHabito] = []
         for t in transacciones:
             valor = abs(Decimal(str(t.get("valor", 0))))
             categoria = t.get("categoria_nombre", "")
-            if (
-                categoria.lower() in ("entretenimiento", "ropa y moda", "viajes")
-                and valor > 200000
-            ):
+            if categoria.lower() in ("entretenimiento", "ropa y moda", "viajes") and valor > 200000:
                 alertas.append(
                     AlertaHabito(
                         tipo=TipoHabito.COMPRAS_IMPULSIVAS,
@@ -206,9 +198,7 @@ class DetectorHabitos:
     # ---------------------------------------------------------------
     # RF04.5 — Crecimiento acelerado del gasto
     # ---------------------------------------------------------------
-    def detectar_crecimiento_gasto(
-        self, historial_mensual: list[dict]
-    ) -> list[AlertaHabito]:
+    def detectar_crecimiento_gasto(self, historial_mensual: list[dict]) -> list[AlertaHabito]:
         """Detecta tendencia de crecimiento del gasto mes a mes > 20%."""
         if len(historial_mensual) < 2:
             return []
@@ -243,14 +233,9 @@ class DetectorHabitos:
     ) -> list[AlertaHabito]:
         """Detecta cuando las cuotas mensuales superan el 40% de los ingresos."""
         total_cuotas = sum(
-            abs(Decimal(str(t.get("valor_cuota", 0))))
-            for t in transacciones
-            if t.get("es_cuota")
+            abs(Decimal(str(t.get("valor_cuota", 0)))) for t in transacciones if t.get("es_cuota")
         )
-        ingresos = sum(
-            abs(Decimal(str(h.get("ingresos", 0))))
-            for h in historial_mensual[:1]
-        )
+        ingresos = sum(abs(Decimal(str(h.get("ingresos", 0)))) for h in historial_mensual[:1])
 
         if ingresos > 0:
             pct = (total_cuotas / ingresos) * 100
@@ -273,18 +258,14 @@ class DetectorHabitos:
     # ---------------------------------------------------------------
     # RF04.7 — Gastos financieros elevados
     # ---------------------------------------------------------------
-    def detectar_gastos_financieros_altos(
-        self, transacciones: list[dict]
-    ) -> list[AlertaHabito]:
+    def detectar_gastos_financieros_altos(self, transacciones: list[dict]) -> list[AlertaHabito]:
         """Detecta cuando los gastos financieros superan el 10% del total gastado."""
         gastos_financieros = sum(
             abs(Decimal(str(t.get("valor", 0))))
             for t in transacciones
             if t.get("categoria_nombre") == "Financieros"
         )
-        total_gastado = sum(
-            abs(Decimal(str(t.get("valor", 0)))) for t in transacciones
-        )
+        total_gastado = sum(abs(Decimal(str(t.get("valor", 0)))) for t in transacciones)
 
         if total_gastado > 0:
             pct = (gastos_financieros / total_gastado) * 100

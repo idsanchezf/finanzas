@@ -109,7 +109,9 @@ async def login(
     from jose import jwt
 
     refresh_payload = jwt.decode(
-        refresh_token, jwt_svc.secret, algorithms=[jwt_svc.algorithm],
+        refresh_token,
+        jwt_svc.secret,
+        algorithms=[jwt_svc.algorithm],
         options={"verify_exp": False},  # Permitimos decodificar sin validar exp
     )
     refresh_jti = refresh_payload["jti"]
@@ -206,7 +208,9 @@ async def refresh_token(
     from jose import jwt
 
     new_payload = jwt.decode(
-        new_refresh, jwt_svc.secret, algorithms=[jwt_svc.algorithm],
+        new_refresh,
+        jwt_svc.secret,
+        algorithms=[jwt_svc.algorithm],
         options={"verify_exp": False},
     )
     new_jti = new_payload["jti"]
@@ -256,7 +260,9 @@ async def logout(
         from jose import jwt as jose_jwt
 
         payload = jose_jwt.decode(
-            token_str, jwt_svc.secret, algorithms=[jwt_svc.algorithm],
+            token_str,
+            jwt_svc.secret,
+            algorithms=[jwt_svc.algorithm],
             options={"verify_exp": False},
         )
         token_jti = payload.get("jti", "")

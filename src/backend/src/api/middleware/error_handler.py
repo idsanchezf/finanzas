@@ -50,16 +50,14 @@ async def handle_domain_exception(request: Request, exc: DomainException) -> JSO
 
     # Enriquecer con datos adicionales para casos especificos
     if isinstance(exc, ExtractoDuplicadoException):
-        body.update({
-            "extracto_id": str(exc.extracto_id) if exc.extracto_id else None,
-            "tarjeta_id": str(exc.tarjeta_id) if exc.tarjeta_id else None,
-            "periodo_inicio": (
-                exc.periodo_inicio.isoformat() if exc.periodo_inicio else None
-            ),
-            "periodo_fin": (
-                exc.periodo_fin.isoformat() if exc.periodo_fin else None
-            ),
-        })
+        body.update(
+            {
+                "extracto_id": str(exc.extracto_id) if exc.extracto_id else None,
+                "tarjeta_id": str(exc.tarjeta_id) if exc.tarjeta_id else None,
+                "periodo_inicio": (exc.periodo_inicio.isoformat() if exc.periodo_inicio else None),
+                "periodo_fin": (exc.periodo_fin.isoformat() if exc.periodo_fin else None),
+            }
+        )
 
     return JSONResponse(status_code=status_code, content=body)
 

@@ -65,9 +65,7 @@ class ExtractoExcelParser:
     PATRON_SECCION_MOVIMIENTOS = re.compile(
         r"movimientos\s+(durante|antes)\s+(el|del)\s+periodo", re.IGNORECASE
     )
-    PATRON_HEADER_AUTORIZACION = re.compile(
-        r"n[uú]mero\s+(de\s+)?autorizaci[oó]n", re.IGNORECASE
-    )
+    PATRON_HEADER_AUTORIZACION = re.compile(r"n[uú]mero\s+(de\s+)?autorizaci[oó]n", re.IGNORECASE)
     PATRON_FECHA_DDMMYYYY = re.compile(r"^\d{1,2}/\d{1,2}/\d{4}$")
 
     # ------------------------------------------------------------------
@@ -154,9 +152,7 @@ class ExtractoExcelParser:
                 return "Banco de Bogota"
 
         # Buscar en el contenido textual
-        all_text = " ".join(
-            str(c) for row in rows[:40] for c in row if c is not None
-        ).lower()
+        all_text = " ".join(str(c) for row in rows[:40] for c in row if c is not None).lower()
 
         if "bancolombia" in all_text or "bcolombia" in all_text:
             return "Bancolombia"
@@ -176,12 +172,13 @@ class ExtractoExcelParser:
 
         # Tambien detectar por encabezados de transaccion
         has_vr_moneda = any(
-            self.PATRON_MONEDA_ORIG.search(str(c))
-            for row in rows for c in row if c is not None
+            self.PATRON_MONEDA_ORIG.search(str(c)) for row in rows for c in row if c is not None
         )
         has_header_auth = any(
             self.PATRON_HEADER_AUTORIZACION.search(str(c))
-            for row in rows for c in row if c is not None
+            for row in rows
+            for c in row
+            if c is not None
         )
         if has_vr_moneda and has_header_auth:
             return "Bancolombia"
@@ -192,18 +189,14 @@ class ExtractoExcelParser:
     # Extraccion de metadatos
     # ==================================================================
 
-    def _extraer_metadatos(
-        self, resultado: ExtractoParseado, rows: list[list], banco: str
-    ) -> None:
+    def _extraer_metadatos(self, resultado: ExtractoParseado, rows: list[list], banco: str) -> None:
         """Extrae metadatos del extracto."""
         if banco == "Bancolombia":
             self._extraer_metadatos_bancolombia(resultado, rows)
         else:
             self._extraer_metadatos_generico(resultado, rows)
 
-    def _extraer_metadatos_bancolombia(
-        self, resultado: ExtractoParseado, rows: list[list]
-    ) -> None:
+    def _extraer_metadatos_bancolombia(self, resultado: ExtractoParseado, rows: list[list]) -> None:
         """Extrae metadatos del formato Bancolombia."""
         # Buscar en las primeras filas (zona de metadata, antes de transacciones)
         tx_start = self._find_transaction_header_row(rows)
@@ -256,7 +249,10 @@ class ExtractoExcelParser:
             if "moneda:" in row_text.lower():
                 for v in row:
                     if isinstance(v, str) and v.strip().upper() in (
-                        "PESOS", "DOLARES", "USD", "COP"
+                        "PESOS",
+                        "DOLARES",
+                        "USD",
+                        "COP",
                     ):
                         resultado.metadatos["moneda"] = v.strip().upper()
                         break
@@ -265,9 +261,7 @@ class ExtractoExcelParser:
         if "periodo_fin" in resultado.metadatos:
             resultado.metadatos["fecha_corte"] = resultado.metadatos["periodo_fin"]
 
-    def _extraer_metadatos_generico(
-        self, resultado: ExtractoParseado, rows: list[list]
-    ) -> None:
+    def _extraer_metadatos_generico(self, resultado: ExtractoParseado, rows: list[list]) -> None:
         """Extrae metadatos de formato generico/desconocido."""
         for row in rows[:30]:
             row_text = " ".join(str(v) for v in row if v is not None).lower()
@@ -312,22 +306,16 @@ class ExtractoExcelParser:
                 section_starts = [header_row]
 
         if not section_starts:
-            resultado.errores.append(
-                "No se encontraron secciones de transacciones en el extracto"
-            )
+            resultado.errores.append("No se encontraron secciones de transacciones en el extracto")
             return
 
         for section_start in section_starts:
             # El header esta en section_start, las transacciones empiezan en section_start + 1
-            self._parse_transaction_section_bancolombia(
-                resultado, rows, section_start
-            )
+            self._parse_transaction_section_bancolombia(resultado, rows, section_start)
 
         # Si no se extrajeron transacciones, es un error
         if not resultado.transacciones:
-            resultado.errores.append(
-                "No se pudieron extraer transacciones del extracto"
-            )
+            resultado.errores.append("No se pudieron extraer transacciones del extracto")
             return
 
         # Post-procesamiento: calcular campos derivados
@@ -335,9 +323,7 @@ class ExtractoExcelParser:
             if t.get("cuotas_totales") and t["cuotas_totales"] > 1:
                 t["es_cuota"] = True
                 try:
-                    t["valor_cuota"] = (
-                        t["valor"] / t["cuotas_totales"]
-                    ).quantize(Decimal("0.01"))
+                    t["valor_cuota"] = (t["valor"] / t["cuotas_totales"]).quantize(Decimal("0.01"))
                 except Exception:
                     t["valor_cuota"] = t["valor"]
             else:
@@ -359,7 +345,11 @@ class ExtractoExcelParser:
                 break
 
             # Verificar si es una sub-fila VR MONEDA ORIG
-            col2_val = str(row[self.BC_COL_MOVIMIENTOS]) if len(row) > self.BC_COL_MOVIMIENTOS and row[self.BC_COL_MOVIMIENTOS] is not None else ""
+            col2_val = (
+                str(row[self.BC_COL_MOVIMIENTOS])
+                if len(row) > self.BC_COL_MOVIMIENTOS and row[self.BC_COL_MOVIMIENTOS] is not None
+                else ""
+            )
 
             if self.PATRON_MONEDA_ORIG.search(col2_val):
                 # Asociar a la transaccion anterior
@@ -413,7 +403,11 @@ class ExtractoExcelParser:
 
     def _parse_vr_moneda_orig(self, row: list, transaccion: dict) -> None:
         """Extrae el valor en moneda original de una sub-fila VR MONEDA ORIG."""
-        col2_val = str(row[self.BC_COL_MOVIMIENTOS]) if len(row) > self.BC_COL_MOVIMIENTOS and row[self.BC_COL_MOVIMIENTOS] is not None else ""
+        col2_val = (
+            str(row[self.BC_COL_MOVIMIENTOS])
+            if len(row) > self.BC_COL_MOVIMIENTOS and row[self.BC_COL_MOVIMIENTOS] is not None
+            else ""
+        )
 
         # Formato: "VR MONEDA ORIG 118.6 EC" o "VR MONEDA ORIG 74.8 EC"
         # Extraer valor y codigo de moneda
@@ -457,13 +451,17 @@ class ExtractoExcelParser:
             row_lower = [str(c).lower() if c is not None else "" for c in row]
             row_str = " ".join(row_lower)
 
-            if "fecha" in row_str and ("movimiento" in row_str or "descrip" in row_str or "comercio" in row_str):
+            if "fecha" in row_str and (
+                "movimiento" in row_str or "descrip" in row_str or "comercio" in row_str
+            ):
                 header_idx = i
                 # Identificar columnas
                 for j, col_name in enumerate(row_lower):
                     if col_name and "fecha" in col_name:
                         fecha_col = j
-                    if col_name and any(w in col_name for w in ("movimiento", "descrip", "comercio", "establec")):
+                    if col_name and any(
+                        w in col_name for w in ("movimiento", "descrip", "comercio", "establec")
+                    ):
                         comercio_col = j
                     if col_name and any(w in col_name for w in ("valor", "monto", "importe")):
                         valor_col = j
@@ -474,9 +472,7 @@ class ExtractoExcelParser:
                 break
 
         if comercio_col < 0 or valor_col < 0:
-            resultado.errores.append(
-                "No se pudieron identificar las columnas de comercio o valor"
-            )
+            resultado.errores.append("No se pudieron identificar las columnas de comercio o valor")
             return
 
         # Parsear transacciones desde header_idx + 1
@@ -485,7 +481,9 @@ class ExtractoExcelParser:
 
             # Detener si encontramos otro header o seccion
             row_text = " ".join(str(v) for v in row if v is not None)
-            if self.PATRON_SECCION_MOVIMIENTOS.search(row_text) or self.PATRON_HEADER_AUTORIZACION.search(row_text):
+            if self.PATRON_SECCION_MOVIMIENTOS.search(
+                row_text
+            ) or self.PATRON_HEADER_AUTORIZACION.search(row_text):
                 continue  # Saltar headers repetidos
 
             comercio = self._safe_str(row, comercio_col)
@@ -543,11 +541,10 @@ class ExtractoExcelParser:
         for val in row:
             if val is None:
                 continue
-            if isinstance(val, (int, float)):
-                if math.isfinite(val) and val > 0:
-                    transaccion["moneda_original"] = "USD"
-                    transaccion["valor_moneda_original"] = Decimal(str(val))
-                    return
+            if isinstance(val, int | float) and math.isfinite(val) and val > 0:
+                transaccion["moneda_original"] = "USD"
+                transaccion["valor_moneda_original"] = Decimal(str(val))
+                return
             if isinstance(val, str):
                 match = re.search(
                     r"vr\s*moneda\s*orig\s+([\d,.]+)\s*(\w+)",
@@ -591,9 +588,7 @@ class ExtractoExcelParser:
     # Utilidades: parseo de numeros colombianos
     # ==================================================================
 
-    def _parse_colombian_number(
-        self, row: list, prefer_index: int | None = None
-    ) -> Decimal | None:
+    def _parse_colombian_number(self, row: list, prefer_index: int | None = None) -> Decimal | None:
         """Extrae un valor numerico de una fila, manejando formato colombiano.
 
         El formato colombiano es inconsistente:
@@ -624,7 +619,7 @@ class ExtractoExcelParser:
             return None
 
         # Si ya es numerico
-        if isinstance(val, (int, float)):
+        if isinstance(val, int | float):
             if math.isfinite(val):
                 return Decimal(str(val))
             return None
@@ -644,7 +639,7 @@ class ExtractoExcelParser:
         if not text:
             return None
 
-        text = text.strip().replace("$", "").replace(" ", "").replace("\u00A0", "")
+        text = text.strip().replace("$", "").replace(" ", "").replace("\u00a0", "")
 
         if not text:
             return None

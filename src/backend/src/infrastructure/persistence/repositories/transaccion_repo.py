@@ -129,9 +129,8 @@ class TransaccionRepository(ITransaccionRepository):
     ) -> list[TransaccionModel]:
         """Lista todas las transacciones de un extracto."""
         stmt = select(TransaccionModel).where(TransaccionModel.extracto_id == extracto_id)
-        if filters:
-            if "categoria_id" in filters:
-                stmt = stmt.where(TransaccionModel.categoria_id == filters["categoria_id"])
+        if filters and "categoria_id" in filters:
+            stmt = stmt.where(TransaccionModel.categoria_id == filters["categoria_id"])
         stmt = stmt.order_by(TransaccionModel.fecha.desc())
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -184,8 +183,7 @@ class TransaccionRepository(ITransaccionRepository):
                     )
                 elif conf == "LOW":
                     stmt = stmt.where(
-                        (TransaccionModel.confidence < 70)
-                        | (TransaccionModel.confidence.is_(None))
+                        (TransaccionModel.confidence < 70) | (TransaccionModel.confidence.is_(None))
                     )
 
         # Count total (sin paginacion)
@@ -211,17 +209,12 @@ class TransaccionRepository(ITransaccionRepository):
         """Transacciones con confidence < 70% o sin clasificar."""
         stmt = select(TransaccionModel).where(
             TransaccionModel.extracto_id == extracto_id,
-            (
-                (TransaccionModel.confidence < 70)
-                | (TransaccionModel.confidence.is_(None))
-            ),
+            ((TransaccionModel.confidence < 70) | (TransaccionModel.confidence.is_(None))),
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def search_comercio(
-        self, usuario_id: uuid.UUID, query: str
-    ) -> list[TransaccionModel]:
+    async def search_comercio(self, usuario_id: uuid.UUID, query: str) -> list[TransaccionModel]:
         """Busqueda full-text por nombre de comercio."""
         stmt = (
             select(TransaccionModel)
@@ -285,8 +278,7 @@ class TransaccionRepository(ITransaccionRepository):
     async def bulk_save(self, transacciones: list[Any]) -> list[Any]:
         """Guarda multiples transacciones en lote."""
         modelos = [
-            t if hasattr(t, "_sa_instance_state") else self._to_model(t)
-            for t in transacciones
+            t if hasattr(t, "_sa_instance_state") else self._to_model(t) for t in transacciones
         ]
         # Usar merge para cada una (soporta inserts y updates)
         for modelo in modelos:
@@ -307,7 +299,9 @@ class TransaccionRepository(ITransaccionRepository):
         await self.session.flush()
         return result.rowcount
 
-    async def update(self, transaccion_id: uuid.UUID, entity: Transaccion) -> TransaccionModel | None:
+    async def update(
+        self, transaccion_id: uuid.UUID, entity: Transaccion
+    ) -> TransaccionModel | None:
         """Actualiza una transaccion existente desde una entidad de dominio.
 
         Busca el modelo ORM por ID, aplica los cambios desde la entidad,

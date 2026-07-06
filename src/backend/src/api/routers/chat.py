@@ -24,7 +24,7 @@ async def chat(
     Cada chunk contiene: {token, tipo: "text"|"chart"|"suggestion", chart_data?}
     """
     mensaje = body.get("mensaje", "")
-    session_id = body.get("session_id")
+    body.get("session_id")
 
     if not mensaje:
         raise HTTPException(
@@ -41,9 +41,11 @@ async def chat(
             ):
                 # Formato SSE: "data: {json}\\n\\n"
                 import json
+
                 yield f"data: {json.dumps(chunk)}\\n\\n"
         except Exception as e:
             import json
+
             yield f"data: {json.dumps({'token': f'Error: {str(e)}', 'tipo': 'error'})}\\n\\n"
 
         # Senal de fin de stream

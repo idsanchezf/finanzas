@@ -15,7 +15,6 @@ Mapping:
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 from uuid import UUID
 
 
@@ -45,11 +44,11 @@ class ExtractoDuplicadoException(DomainException):
 
     def __init__(
         self,
-        extracto_id_existente: Optional[UUID] = None,
-        tarjeta_id: Optional[UUID] = None,
-        periodo_inicio: Optional[date] = None,
-        periodo_fin: Optional[date] = None,
-        message: Optional[str] = None,
+        extracto_id_existente: UUID | None = None,
+        tarjeta_id: UUID | None = None,
+        periodo_inicio: date | None = None,
+        periodo_fin: date | None = None,
+        message: str | None = None,
     ) -> None:
         self.extracto_id = extracto_id_existente
         self.tarjeta_id = tarjeta_id
@@ -82,7 +81,7 @@ class ExtractoDuplicadoException(DomainException):
 class ValidacionFallidaException(DomainException):
     """Error de validacion del archivo Excel (formato no reconocible)."""
 
-    def __init__(self, message: str, detalles: Optional[dict] = None) -> None:
+    def __init__(self, message: str, detalles: dict | None = None) -> None:
         self.detalles = detalles or {}
         super().__init__(message, error_code="VALIDACION_FALLIDA")
 
@@ -96,7 +95,7 @@ class TarjetaNoEncontradaException(DomainException):
     """No se pudo identificar la tarjeta a partir del extracto."""
 
     def __init__(
-        self, ultimos_4_digitos: str = "", banco: str = "", message: Optional[str] = None
+        self, ultimos_4_digitos: str = "", banco: str = "", message: str | None = None
     ) -> None:
         self.ultimos_4_digitos = ultimos_4_digitos
         self.banco = banco

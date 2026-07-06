@@ -16,7 +16,7 @@ from google.generativeai.types import GenerationConfig
 logger = logging.getLogger(__name__)
 
 # System prompt para el asistente financiero
-SYSTEM_PROMPT = """Eres un asistente financiero personal de Finance Report, una aplicacion de 
+SYSTEM_PROMPT = """Eres un asistente financiero personal de Finance Report, una aplicacion de
 analisis de gastos. Ayudas al usuario a entender sus finanzas, detectar patrones de gasto,
 y dar recomendaciones practicas para mejorar su salud financiera.
 
@@ -146,9 +146,7 @@ class GeminiClient:
                     "tipo": "text",
                 }
 
-    def _build_prompt(
-        self, mensaje: str, user_context: dict[str, Any] | None
-    ) -> str:
+    def _build_prompt(self, mensaje: str, user_context: dict[str, Any] | None) -> str:
         """Construye el prompt con contexto financiero del usuario."""
         if not user_context:
             return mensaje
@@ -162,14 +160,11 @@ class GeminiClient:
         if "categorias_top" in user_context:
             cats = user_context["categorias_top"]
             contexto_partes.append(
-                "Top categorias: " + ", ".join(
-                    f"{c['nombre']} (${c['total']:,.0f})" for c in cats[:3]
-                )
+                "Top categorias: "
+                + ", ".join(f"{c['nombre']} (${c['total']:,.0f})" for c in cats[:3])
             )
         if "presupuestos" in user_context:
-            contexto_partes.append(
-                f"Presupuestos activos: {len(user_context['presupuestos'])}"
-            )
+            contexto_partes.append(f"Presupuestos activos: {len(user_context['presupuestos'])}")
 
         if contexto_partes:
             contexto = "\n".join(contexto_partes)

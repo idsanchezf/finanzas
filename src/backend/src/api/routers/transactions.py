@@ -24,6 +24,7 @@ router = APIRouter()
 # Rutas fijas (antes de las rutas con parametros de path)
 # ============================================================
 
+
 @router.get("/search")
 async def search_transactions(
     q: str = Query(..., min_length=2),
@@ -86,6 +87,7 @@ async def bulk_update_category(
 # Rutas principales
 # ============================================================
 
+
 @router.get("")
 async def list_transactions(
     extract_id: str | None = Query(None),
@@ -122,7 +124,9 @@ async def get_transaction(
     """Obtiene el detalle completo de una transaccion."""
     t = await transaccion_repo.get_by_id(uuid.UUID(transaction_id))
     if not t:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaccion no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Transaccion no encontrada"
+        )
 
     return {
         "id": str(t.id),
@@ -136,7 +140,9 @@ async def get_transaction(
         "cuotas_totales": t.cuotas_totales,
         "cuota_actual": t.cuota_actual,
         "moneda_original": t.moneda_original,
-        "valor_moneda_original": float(t.valor_moneda_original) if t.valor_moneda_original else None,
+        "valor_moneda_original": float(t.valor_moneda_original)
+        if t.valor_moneda_original
+        else None,
         "categoria_id": str(t.categoria_id) if t.categoria_id else None,
         "confidence": float(t.confidence) if t.confidence else None,
     }
@@ -152,7 +158,9 @@ async def update_transaction_category(
     """Cambia la categoria de una transaccion. Dispara aprendizaje del modelo ML."""
     categoria_id = body.get("category_id")
     if not categoria_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="category_id es requerido")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="category_id es requerido"
+        )
 
     cmd = CorregirCategoriaCommand(
         usuario_id=uuid.UUID(user_id),

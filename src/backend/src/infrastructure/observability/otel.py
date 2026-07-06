@@ -10,6 +10,7 @@ Configura:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 
@@ -91,7 +92,9 @@ def init_observability() -> None:
                     boundaries=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
                 ),
             ),
-        ] if False else [],  # Views opcionales
+        ]
+        if False
+        else [],  # Views opcionales
     )
     metrics.set_meter_provider(meter_provider)
 
@@ -124,9 +127,7 @@ def init_observability() -> None:
             enable_commenter=True,  # Agrega comentarios SQL para correlacion
         )
     except Exception:
-        logging.getLogger(__name__).warning(
-            "No se pudo instrumentar SQLAlchemy."
-        )
+        logging.getLogger(__name__).warning("No se pudo instrumentar SQLAlchemy.")
 
     # Redis
     try:
@@ -134,9 +135,7 @@ def init_observability() -> None:
 
         RedisInstrumentor().instrument(tracer_provider=tracer_provider)
     except Exception:
-        logging.getLogger(__name__).warning(
-            "No se pudo instrumentar Redis."
-        )
+        logging.getLogger(__name__).warning("No se pudo instrumentar Redis.")
 
     # ---------------------------------------------------------------
     # Logging bridge: structlog → OpenTelemetry
@@ -161,9 +160,7 @@ def init_observability() -> None:
             "Actualiza opentelemetry-sdk a version con soporte de logs."
         )
     except Exception as e:
-        logging.getLogger(__name__).warning(
-            f"No se pudo configurar el bridge de logging OTLP: {e}"
-        )
+        logging.getLogger(__name__).warning(f"No se pudo configurar el bridge de logging OTLP: {e}")
 
     logging.getLogger(__name__).info(
         f"OpenTelemetry inicializado: service={service_name}, "
@@ -175,15 +172,11 @@ def shutdown_observability() -> None:
     """Apaga gracefulmente los exportadores de OpenTelemetry."""
     from opentelemetry import metrics, trace
 
-    try:
+    with contextlib.suppress(Exception):
         trace.get_tracer_provider().shutdown()
-    except Exception:
-        pass
 
-    try:
+    with contextlib.suppress(Exception):
         metrics.get_meter_provider().shutdown()
-    except Exception:
-        pass
 
 
 # Helper para bucket aggregation
@@ -193,5 +186,6 @@ class ExplicitBucketHistogramAggregation:
     Nota: Esta es una implementacion simplificada. En OpenTelemetry >= 1.28,
     usar opentelemetry.sdk.metrics.view.ExplicitBucketHistogramAggregation directamente.
     """
+
     def __init__(self, boundaries: list[float]) -> None:
         self.boundaries = boundaries

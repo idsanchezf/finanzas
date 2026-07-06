@@ -57,8 +57,18 @@ class PeriodoFacturacion:
     def etiqueta(self) -> str:
         """Etiqueta legible: 'Jun 2026'."""
         meses = [
-            "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+            "Ene",
+            "Feb",
+            "Mar",
+            "Abr",
+            "May",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dic",
         ]
         mes = meses[self.fecha_inicio.month - 1]
         return f"{mes} {self.fecha_inicio.year}"
