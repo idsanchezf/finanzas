@@ -28,7 +28,7 @@ from src.domain.entities.extracto import EstadoExtracto, Extracto
 from src.domain.events import (
     ExtractoProcesado,
 )
-from src.domain.exceptions import ExtractoDuplicadoError, ValidacionFallidaError
+from src.domain.exceptions import ExtractoDuplicadoError
 from src.domain.repositories import (
     IExtractoRepository,
     ITransaccionRepository,
@@ -316,15 +316,16 @@ class TestNoDuplicateFlow:
         assert result["estado"] == "COMPLETED"
 
 
-class TestRejectWhenPeriodoNotDetectable:
-    """Tests para Fix #2: Rechazar extractos sin periodo detectable -> 422.
+class TestAllowWhenPeriodoNotDetectable:
+    """Tests para Fix #2: Permitir extractos sin periodo detectable -> proteccion solo por hash.
 
-    BN-DUP-02 modificado: Si periodo_inicio o periodo_fin es None DESPUES del parseo,
-    se lanza ValidacionFallidaError (422) en lugar de omitir la validacion.
+    BN-DUP-02 modificado: Si periodo_inicio o periodo_fin es None post-parseo,
+    se permite la carga pero solo se protege contra duplicados via file_hash
+    (no via periodo). No se lanza ValidacionFallidaError.
     """
 
     @pytest.mark.asyncio
-    async def test_should_reject_when_both_periodos_are_none(
+    async def test_should_allow_when_both_periodos_are_none(
         self,
         handler: CommandHandler,
         cmd: CargarExtractoCommand,
@@ -332,27 +333,31 @@ class TestRejectWhenPeriodoNotDetectable:
         mock_transaccion_repo: MagicMock,
         tarjeta_id: UUID,
     ):
-        """Fix #2: Si ambos periodos son None post-parseo -> 422 ValidacionFallidaError."""
+        """Fix #2: Si ambos periodos son None post-parseo -> permite carga, protege por hash."""
         # Arrange --------------------------------------------------------
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
+        mock_extracto_repo.get_by_tarjeta_and_file_hash.return_value = None
+        mock_extracto_repo.save.return_value = None
         mock_transaccion_repo.bulk_save.return_value = []
         mock_parse = _mock_parser(periodo_inicio=None, periodo_fin=None)
 
-        # Act & Assert ----------------------------------------------------
+        # Act ------------------------------------------------------------
         with patch(
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaError) as exc_info:
-                await handler.handle_cargar_extracto(cmd)
+            result = await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
-        ex = exc_info.value
-        assert ex.error_code == "VALIDACION_FALLIDA"
-        assert "periodo" in str(ex).lower()
+        # No debe lanzar excepcion
+        assert result is not None
+        # get_by_tarjeta_and_periodo NO debe llamarse (periodo no detectable)
+        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
+        # get_by_tarjeta_and_file_hash SI debe llamarse (proteccion por hash)
+        mock_extracto_repo.get_by_tarjeta_and_file_hash.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_should_reject_when_periodo_inicio_is_none(
+    async def test_should_allow_when_periodo_inicio_is_none(
         self,
         handler: CommandHandler,
         cmd: CargarExtractoCommand,
@@ -361,22 +366,27 @@ class TestRejectWhenPeriodoNotDetectable:
         tarjeta_id: UUID,
         periodo_fin: date,
     ):
-        """Fix #2: Si solo periodo_inicio es None post-parseo -> 422."""
+        """Fix #2: Si solo periodo_inicio es None post-parseo -> permite carga."""
         # Arrange --------------------------------------------------------
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
+        mock_extracto_repo.get_by_tarjeta_and_file_hash.return_value = None
+        mock_extracto_repo.save.return_value = None
         mock_transaccion_repo.bulk_save.return_value = []
         mock_parse = _mock_parser(periodo_inicio=None, periodo_fin=periodo_fin)
 
-        # Act & Assert ----------------------------------------------------
+        # Act ------------------------------------------------------------
         with patch(
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaError):
-                await handler.handle_cargar_extracto(cmd)
+            result = await handler.handle_cargar_extracto(cmd)
+
+        # Assert ----------------------------------------------------------
+        assert result is not None
+        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_should_reject_when_periodo_fin_is_none(
+    async def test_should_allow_when_periodo_fin_is_none(
         self,
         handler: CommandHandler,
         cmd: CargarExtractoCommand,
@@ -385,19 +395,24 @@ class TestRejectWhenPeriodoNotDetectable:
         tarjeta_id: UUID,
         periodo_inicio: date,
     ):
-        """Fix #2: Si solo periodo_fin es None post-parseo -> 422."""
+        """Fix #2: Si solo periodo_fin es None post-parseo -> permite carga."""
         # Arrange --------------------------------------------------------
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
+        mock_extracto_repo.get_by_tarjeta_and_file_hash.return_value = None
+        mock_extracto_repo.save.return_value = None
         mock_transaccion_repo.bulk_save.return_value = []
         mock_parse = _mock_parser(periodo_inicio=periodo_inicio, periodo_fin=None)
 
-        # Act & Assert ----------------------------------------------------
+        # Act ------------------------------------------------------------
         with patch(
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaError):
-                await handler.handle_cargar_extracto(cmd)
+            result = await handler.handle_cargar_extracto(cmd)
+
+        # Assert ----------------------------------------------------------
+        assert result is not None
+        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
 
 
 class TestIntegrityErrorSafetyNet:
@@ -453,10 +468,10 @@ class TestIntegrityErrorSafetyNet:
 
 
 class TestPeriodoValidation:
-    """Tests para Fix #2: Validacion de periodo post-parseo."""
+    """Tests para Fix #2: Periodo no detectable -> permite carga con proteccion por hash."""
 
     @pytest.mark.asyncio
-    async def test_should_return_422_when_periodo_not_detectable(
+    async def test_should_allow_and_use_hash_when_periodo_not_detectable(
         self,
         handler: CommandHandler,
         cmd: CargarExtractoCommand,
@@ -464,29 +479,28 @@ class TestPeriodoValidation:
         mock_transaccion_repo: MagicMock,
         tarjeta_id: UUID,
     ):
-        """Fix #2: Si el parser no extrae periodo -> ValidacionFallidaError (422).
-
-        Verifica que la excepcion tiene error_code VALIDACION_FALLIDA
-        y el mensaje indica que no se pudo determinar el periodo.
-        """
+        """Fix #2: Si el parser no extrae periodo -> permite carga, protege por hash."""
         # Arrange --------------------------------------------------------
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
         mock_extracto_repo.get_by_tarjeta_and_file_hash.return_value = None
+        mock_extracto_repo.save.return_value = None
         mock_transaccion_repo.bulk_save.return_value = []
         mock_parse = _mock_parser(periodo_inicio=None, periodo_fin=None)
 
-        # Act & Assert ----------------------------------------------------
+        # Act ------------------------------------------------------------
         with patch(
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaError) as exc_info:
-                await handler.handle_cargar_extracto(cmd)
+            result = await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
-        ex = exc_info.value
-        assert ex.error_code == "VALIDACION_FALLIDA"
-        assert "periodo" in str(ex).lower() or "archivo" in str(ex).lower()
+        # No debe lanzar excepcion
+        assert result is not None
+        # get_by_tarjeta_and_periodo NO debe llamarse (periodo no detectable)
+        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
+        # get_by_tarjeta_and_file_hash SI debe llamarse
+        mock_extracto_repo.get_by_tarjeta_and_file_hash.assert_called_once()
         # No se debe haber llamado save (Fix #1: save post-parseo)
         mock_extracto_repo.save.assert_not_called()
 
@@ -500,7 +514,7 @@ class TestFileHashDetection:
     """Tests para Fix #3: Deteccion de duplicados por hash SHA-256 del archivo."""
 
     @pytest.mark.asyncio
-    async def test_should_detect_duplicate_by_file_hash_when_periodo_check_returns_none(
+    async def test_should_detect_duplicate_by_file_hash_early_preparseo(
         self,
         handler: CommandHandler,
         cmd: CargarExtractoCommand,
@@ -512,39 +526,28 @@ class TestFileHashDetection:
         periodo_inicio: date,
         periodo_fin: date,
     ):
-        """Fix #3: Si get_by_tarjeta_and_periodo no encuentra match,
-        pero get_by_tarjeta_and_file_hash si -> ExtractoDuplicadoError.
+        """Fix #3: Pre-flight temprano por hash detecta duplicado antes del parseo -> 409.
 
-        El file_hash actua como respaldo (fallback) ante el chequeo por periodo.
+        El hash se chequea inmediatamente al recibir el archivo, sin parsear.
+        get_by_tarjeta_and_periodo NO se llama porque la excepcion se lanza antes.
         """
         # Arrange --------------------------------------------------------
-        # Periodo check: no match
-        mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
-        # File hash check: SI encuentra match
         existing = _create_existing_extracto(
             extracto_id_existente, tarjeta_id, periodo_inicio, periodo_fin
         )
+        # El chequeo temprano por hash encuentra match
         mock_extracto_repo.get_by_tarjeta_and_file_hash.return_value = existing
 
-        mock_extracto_repo.save.return_value = MagicMock(
-            id=uuid4(), estado="PARSING", progress_pct=10, tarjeta_id=tarjeta_id
-        )
-        mock_transaccion_repo.bulk_save.return_value = []
-        mock_parse = _mock_parser(periodo_inicio=periodo_inicio, periodo_fin=periodo_fin)
-
         # Act & Assert ----------------------------------------------------
-        with patch(
-            "src.infrastructure.excel.parser.ExtractoExcelParser",
-            return_value=mock_parse,
-        ):
-            with pytest.raises(ExtractoDuplicadoError) as exc_info:
-                await handler.handle_cargar_extracto(cmd)
+        with pytest.raises(ExtractoDuplicadoError) as exc_info:
+            await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
         ex = exc_info.value
         assert ex.error_code == "EXTRACTO_DUPLICADO"
-        # Verificar que AMBOS checks fueron llamados
-        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_called_once()
+        # get_by_tarjeta_and_periodo NO se llama (parseo no ocurre)
+        mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
+        # get_by_tarjeta_and_file_hash SI se llama (pre-flight temprano)
         mock_extracto_repo.get_by_tarjeta_and_file_hash.assert_called_once()
 
     @pytest.mark.asyncio

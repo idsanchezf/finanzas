@@ -316,8 +316,8 @@ def then_emite_evento_creado(bdd_context: dict, bdd_event_bus) -> None:
     assert isinstance(call_args, ExtractoProcesado)
 
 
-@then('se registra un log de nivel WARN indicando "periodo no detectable, validacion de duplicado omitida"')
-def then_registra_warn(bdd_context: dict) -> None:
+@then("se registra un log de nivel WARN indicando que el periodo no es detectable")
+def then_registra_warn_periodo_no_detectable(bdd_context: dict) -> None:
     assert _result(bdd_context)["status"] == "created"
 
 

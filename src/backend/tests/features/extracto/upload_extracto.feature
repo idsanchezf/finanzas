@@ -27,12 +27,13 @@ Feature: Prevenir carga de extractos duplicados
     When el usuario sube un extracto para la tarjeta "4321" con periodo "2026-05-01" a "2026-05-31"
     Then el sistema responde con codigo 201 Created
 
-  Scenario: Rechazar extracto sin periodo facturable detectable
+  Scenario: Permitir carga de extracto sin periodo facturable detectable (proteccion por hash)
     Given que existe una tarjeta "7681" del banco "Bancolombia"
     And que el archivo Excel no contiene informacion de periodo facturado
     When el usuario sube el extracto para la tarjeta "7681"
-    Then el sistema responde con codigo 422 Unprocessable Entity
-    And el mensaje indica que no se pudo determinar el periodo del extracto
+    Then el sistema responde con codigo 201 Created
+    And el extracto se persiste correctamente en la base de datos
+    And se registra un log de nivel WARN indicando que el periodo no es detectable
 
   Scenario: Rechazar extracto duplicado con mismo hash de archivo
     Given que existe una tarjeta "7681" del banco "Bancolombia"
