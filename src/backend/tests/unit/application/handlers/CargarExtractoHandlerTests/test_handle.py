@@ -503,8 +503,6 @@ class TestPeriodoValidation:
         mock_extracto_repo.get_by_tarjeta_and_file_hash.assert_called_once()
         # save SI se llama (el handler persiste el extracto)
         mock_extracto_repo.save.assert_called_once()
-        # No se debe haber llamado save (Fix #1: save post-parseo)
-        mock_extracto_repo.save.assert_not_called()
 
 
 # ============================================================
