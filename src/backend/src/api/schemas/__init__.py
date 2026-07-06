@@ -4,7 +4,7 @@ FastAPI usa estos schemas para validacion, serializacion y documentacion OpenAPI
 Separados de las entidades de dominio para mantener la independencia de capas.
 """
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
