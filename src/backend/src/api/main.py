@@ -19,9 +19,9 @@ import structlog
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from src.domain.exceptions import DomainException
-from fastapi.responses import JSONResponse
 
 # Cargar variables de entorno antes de importar modulos
 load_dotenv()
@@ -120,7 +120,6 @@ app.add_middleware(
 # Esto evita incompatibilidad con CORSMiddleware que causaba
 # respuestas de error sin headers CORS.
 from src.api.middleware.error_handler import (
-    EXCEPTION_STATUS_MAP,
     handle_domain_exception,
     handle_unhandled_exception,
 )

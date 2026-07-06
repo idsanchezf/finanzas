@@ -11,6 +11,8 @@ import logging
 from decimal import Decimal
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
 from src.application.commands import (
     CargarExtractoCommand,
     ClasificarTransaccionCommand,
@@ -20,7 +22,6 @@ from src.application.commands import (
     CrearMetaAhorroCommand,
     CrearPresupuestoCommand,
 )
-from sqlalchemy.exc import IntegrityError
 
 from src.domain.entities.categoria import Categoria
 from src.domain.entities.extracto import Extracto
@@ -28,7 +29,7 @@ from src.domain.entities.meta_ahorro import MetaAhorro
 from src.domain.entities.presupuesto import Presupuesto
 from src.domain.entities.transaccion import Transaccion
 from src.domain.events import ExtractoDuplicadoDetectado
-from src.domain.exceptions import ExtractoDuplicadoException, ValidacionFallidaException
+from src.domain.exceptions import ExtractoDuplicadoException
 from src.domain.repositories import (
     ICategoriaRepository,
     IExtractoRepository,
@@ -297,7 +298,7 @@ class CommandHandler:
         # (antes se persistia 2 veces: pre y post; ahora solo 1 vez post)
         try:
             await self.extracto_repo.save(extracto)
-        except IntegrityError:
+        except IntegrityError as err:
             # Safety net: Race condition capturada (feat-003 / T007)
             logger.error(
                 "race_condition_detectada_extracto_duplicado | tarjeta_id=%s "
@@ -316,7 +317,7 @@ class CommandHandler:
             except ImportError:
                 pass
 
-            raise ExtractoDuplicadoException()
+            raise ExtractoDuplicadoException() from err
 
         # 5.5 Persistir transacciones DESPUES del extracto (Fix #1)
         #    El extracto ya existe en BD, las FKs son validas

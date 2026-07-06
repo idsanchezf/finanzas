@@ -9,6 +9,7 @@ from __future__ import annotations
 import structlog
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.domain.exceptions import (
     DomainException,
@@ -93,7 +94,6 @@ async def handle_unhandled_exception(request: Request, exc: Exception) -> JSONRe
 # Mantenido para compatibilidad hacia atras.
 # Preferir los exception handlers nativos de FastAPI.
 # ============================================================
-from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):

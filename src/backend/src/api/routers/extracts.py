@@ -17,7 +17,7 @@ from src.api.dependencies import (
 )
 from src.application.commands.cargar_extracto import CargarExtractoCommand
 from src.application.queries.obtener_extractos import ObtenerExtractosQuery
-from src.domain.entities.tarjeta import Tarjeta, TipoTarjeta
+from src.domain.entities.tarjeta import Tarjeta
 
 router = APIRouter()
 
