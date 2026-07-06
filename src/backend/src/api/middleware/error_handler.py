@@ -1,4 +1,4 @@
-"""Manejo de errores — Problem Details RFC 7807 + DomainException mapping.
+"""Manejo de errores — Problem Details RFC 7807 + DomainError mapping.
 
 Usa exception handlers nativos de FastAPI (@app.exception_handler)
 en lugar de BaseHTTPMiddleware para evitar incompatibilidad con CORSMiddleware.
@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.domain.exceptions import (
-    DomainException,
+    DomainError,
     ExtractoDuplicadoException,
 )
 
@@ -28,8 +28,8 @@ EXCEPTION_STATUS_MAP: dict[str, int] = {
 }
 
 
-async def handle_domain_exception(request: Request, exc: DomainException) -> JSONResponse:
-    """Exception handler nativo de FastAPI para DomainException."""
+async def handle_domain_exception(request: Request, exc: DomainError) -> JSONResponse:
+    """Exception handler nativo de FastAPI para DomainError."""
     correlation_id = getattr(request.state, "correlation_id", "unknown")
     status_code = EXCEPTION_STATUS_MAP.get(exc.error_code, 400)
 
@@ -100,7 +100,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
             return await call_next(request)
-        except DomainException as e:
+        except DomainError as e:
             return await handle_domain_exception(request, e)
         except Exception as e:
             return await handle_unhandled_exception(request, e)

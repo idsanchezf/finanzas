@@ -56,12 +56,15 @@ class Extracto:
 
     def __post_init__(self) -> None:
         """Valida invariantes de negocio: periodo_inicio < periodo_fin."""
-        if self.periodo_inicio is not None and self.periodo_fin is not None:
-            if self.periodo_inicio > self.periodo_fin:
-                raise ValueError(
-                    f"periodo_inicio ({self.periodo_inicio}) debe ser anterior a "
-                    f"periodo_fin ({self.periodo_fin})"
-                )
+        if (
+            self.periodo_inicio is not None
+            and self.periodo_fin is not None
+            and self.periodo_inicio > self.periodo_fin
+        ):
+            raise ValueError(
+                f"periodo_inicio ({self.periodo_inicio}) debe ser anterior a "
+                f"periodo_fin ({self.periodo_fin})"
+            )
 
     def iniciar_procesamiento(self) -> list[Any]:
         """Marca el extracto como en procesamiento y publica evento."""

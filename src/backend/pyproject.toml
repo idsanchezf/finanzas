@@ -182,11 +182,7 @@ select = [
 ]
 ignore = [
     "E501",   # Line too long — handled by black
-    "B008",   # Depends() is idiomatic FastAPI
-    "E402",   # Module-level imports for lazy loading
-    "N818",   # DomainException naming convention (DDD)
-    "N814",   # Camelcase import alias (e.g. Uuid as UUID)
-    "SIM102", # Nested if style preference
+    "B008",   # Depends/Body/File/Query in defaults — idiomatic FastAPI, documented pattern
 ]
 
 

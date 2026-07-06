@@ -72,9 +72,10 @@ class GoogleOAuthService:
                 - error (str): Mensaje de error si no es valido.
         """
         # Modo desarrollo: aceptar token "dev-token" sin validar
-        if os.getenv("ENVIRONMENT", "production") == "development":
-            if id_token == "dev-token" or id_token.startswith("dev-"):
-                return {
+        if os.getenv("ENVIRONMENT", "production") == "development" and (
+            id_token == "dev-token" or id_token.startswith("dev-")
+        ):
+            return {
                     "valid": True,
                     "email": "dev@financereport.local",
                     "nombre": "Dev User",

@@ -1,7 +1,7 @@
 """Excepciones de dominio — Mapeo semantico de errores de negocio.
 
-Cada excepcion extiende DomainException con un error_code semantico.
-El middleware DomainExceptionMiddleware en la capa API las convierte
+Cada excepcion extiende DomainError con un error_code semantico.
+El middleware DomainErrorMiddleware en la capa API las convierte
 automaticamente en respuestas HTTP con el status code adecuado.
 
 Mapping:
@@ -18,7 +18,7 @@ from datetime import date
 from uuid import UUID
 
 
-class DomainException(Exception):
+class DomainError(Exception):
     """Excepcion base del dominio con codigo de error semantico."""
 
     def __init__(self, message: str, error_code: str = "DOMAIN_ERROR") -> None:
@@ -31,7 +31,7 @@ class DomainException(Exception):
 # ============================================================
 
 
-class ExtractoDuplicadoException(DomainException):
+class ExtractoDuplicadoException(DomainError):
     """Se lanza cuando se detecta que un extracto ya existe
     para la misma tarjeta + periodo.
 
@@ -78,7 +78,7 @@ class ExtractoDuplicadoException(DomainException):
         super().__init__(message, error_code="EXTRACTO_DUPLICADO")
 
 
-class ValidacionFallidaException(DomainException):
+class ValidacionFallidaException(DomainError):
     """Error de validacion del archivo Excel (formato no reconocible)."""
 
     def __init__(self, message: str, detalles: dict | None = None) -> None:
@@ -91,7 +91,7 @@ class ValidacionFallidaException(DomainException):
 # ============================================================
 
 
-class TarjetaNoEncontradaException(DomainException):
+class TarjetaNoEncontradaException(DomainError):
     """No se pudo identificar la tarjeta a partir del extracto."""
 
     def __init__(
@@ -112,14 +112,14 @@ class TarjetaNoEncontradaException(DomainException):
 # ============================================================
 
 
-class NoAutenticadoException(DomainException):
+class NoAutenticadoException(DomainError):
     """Token JWT invalido, expirado o no proporcionado."""
 
     def __init__(self, message: str = "Token JWT invalido o expirado") -> None:
         super().__init__(message, error_code="NO_AUTENTICADO")
 
 
-class PermisoDenegadoException(DomainException):
+class PermisoDenegadoException(DomainError):
     """El usuario no tiene permisos para realizar la operacion."""
 
     def __init__(self, message: str = "No tienes permisos para realizar esta operacion") -> None:

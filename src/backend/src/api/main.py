@@ -21,7 +21,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.domain.exceptions import DomainException
+from src.api.middleware.error_handler import (
+    handle_domain_exception,
+    handle_unhandled_exception,
+)
+from src.api.middleware.logging import LoggingMiddleware
+from src.api.routers import (
+    auth,
+    budgets,
+    categories,
+    chat,
+    dashboard,
+    extracts,
+    insights,
+    merchants,
+    notifications,
+    transactions,
+)
+from src.domain.exceptions import DomainError
 
 # Cargar variables de entorno antes de importar modulos
 load_dotenv()
@@ -119,13 +136,7 @@ app.add_middleware(
 # Exception handlers nativos de FastAPI (en vez de BaseHTTPMiddleware)
 # Esto evita incompatibilidad con CORSMiddleware que causaba
 # respuestas de error sin headers CORS.
-from src.api.middleware.error_handler import (
-    handle_domain_exception,
-    handle_unhandled_exception,
-)
-from src.api.middleware.logging import LoggingMiddleware
-
-app.add_exception_handler(DomainException, handle_domain_exception)
+app.add_exception_handler(DomainError, handle_domain_exception)
 app.add_exception_handler(Exception, handle_unhandled_exception)
 app.add_middleware(LoggingMiddleware)
 
@@ -256,19 +267,6 @@ async def metrics():
 # ============================================================
 # Routers — API v1
 # ============================================================
-from src.api.routers import (
-    auth,
-    budgets,
-    categories,
-    chat,
-    dashboard,
-    extracts,
-    insights,
-    merchants,
-    notifications,
-    transactions,
-)
-
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticacion"])
 app.include_router(extracts.router, prefix="/api/v1/extracts", tags=["Extractos"])
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["Transacciones"])
