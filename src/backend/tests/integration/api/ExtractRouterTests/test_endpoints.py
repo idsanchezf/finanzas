@@ -211,8 +211,8 @@ class TestUploadEndpoint:
     """Escenarios para POST /api/v1/extracts/upload."""
 
     @pytest.mark.asyncio
-    async def test_Should_Return422_When_ExcelWithoutPeriodo(self, app: FastAPI) -> None:
-        """Fix #2: Retorna 422 cuando el Excel no contiene periodo facturable detectable."""
+    async def test_Should_Return201_When_ExcelWithoutPeriodo(self, app: FastAPI) -> None:
+        """Fix #2 actualizado: Permite carga sin periodo (proteccion por hash). Retorna 201."""
         # Arrange --------------------------------------------------------
         test_excel = _create_test_excel()
         tarjeta_id = str(uuid.uuid4())
@@ -226,10 +226,8 @@ class TestUploadEndpoint:
             )
 
         # Assert ----------------------------------------------------------
-        assert response.status_code == 422
-        data = response.json()
-        assert data["error"] == "VALIDACION_FALLIDA"
-        assert "periodo" in data["message"].lower()
+        # Ahora se permite la carga sin periodo (proteccion solo por hash)
+        assert response.status_code == 201
 
     @pytest.mark.asyncio
     async def test_Should_Return400_When_NonExcelFile(self, app_no_db: FastAPI) -> None:

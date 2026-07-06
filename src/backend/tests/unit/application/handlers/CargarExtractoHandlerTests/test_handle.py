@@ -495,12 +495,14 @@ class TestPeriodoValidation:
             result = await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
-        # No debe lanzar excepcion
+        # No debe lanzar excepcion — el flujo completa normalmente
         assert result is not None
         # get_by_tarjeta_and_periodo NO debe llamarse (periodo no detectable)
         mock_extracto_repo.get_by_tarjeta_and_periodo.assert_not_called()
-        # get_by_tarjeta_and_file_hash SI debe llamarse
+        # get_by_tarjeta_and_file_hash SI debe llamarse (proteccion por hash)
         mock_extracto_repo.get_by_tarjeta_and_file_hash.assert_called_once()
+        # save SI se llama (el handler persiste el extracto)
+        mock_extracto_repo.save.assert_called_once()
         # No se debe haber llamado save (Fix #1: save post-parseo)
         mock_extracto_repo.save.assert_not_called()
 
