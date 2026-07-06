@@ -27,7 +27,7 @@ class CategoriaRepository(ICategoriaRepository):
         """Retorna categorias predefinidas + personalizadas del usuario."""
         stmt = select(CategoriaModel).where(
             or_(
-                CategoriaModel.es_predefinida == True,
+                CategoriaModel.es_predefinida,
                 CategoriaModel.usuario_id == usuario_id,
             )
         )
@@ -35,7 +35,7 @@ class CategoriaRepository(ICategoriaRepository):
         return list(result.scalars().all())
 
     async def get_predefinidas(self) -> list[CategoriaModel]:
-        stmt = select(CategoriaModel).where(CategoriaModel.es_predefinida == True)
+        stmt = select(CategoriaModel).where(CategoriaModel.es_predefinida)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
@@ -75,12 +75,12 @@ class CategoriaRepository(ICategoriaRepository):
         if usuario_id is not None:
             conditions.append(
                 or_(
-                    CategoriaModel.es_predefinida == True,
+                    CategoriaModel.es_predefinida,
                     CategoriaModel.usuario_id == usuario_id,
                 )
             )
         else:
-            conditions.append(CategoriaModel.es_predefinida == True)
+            conditions.append(CategoriaModel.es_predefinida)
 
         stmt = select(CategoriaModel).where(*conditions)
         result = await self.session.execute(stmt)
