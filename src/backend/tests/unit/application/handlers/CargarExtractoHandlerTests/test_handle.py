@@ -28,7 +28,7 @@ from src.domain.entities.extracto import EstadoExtracto, Extracto
 from src.domain.events import (
     ExtractoProcesado,
 )
-from src.domain.exceptions import ExtractoDuplicadoException, ValidacionFallidaException
+from src.domain.exceptions import ExtractoDuplicadoError, ValidacionFallidaError
 from src.domain.repositories import (
     IExtractoRepository,
     ITransaccionRepository,
@@ -190,7 +190,7 @@ class TestDuplicateDetection:
         periodo_inicio: date,
         periodo_fin: date,
     ):
-        """BN-DUP-01: Si get_by_tarjeta_and_periodo retorna extracto -> lanza ExtractoDuplicadoException."""
+        """BN-DUP-01: Si get_by_tarjeta_and_periodo retorna extracto -> lanza ExtractoDuplicadoError."""
         # Arrange --------------------------------------------------------
         existing = _create_existing_extracto(
             extracto_id_existente, tarjeta_id, periodo_inicio, periodo_fin
@@ -208,7 +208,7 @@ class TestDuplicateDetection:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ExtractoDuplicadoException) as exc_info:
+            with pytest.raises(ExtractoDuplicadoError) as exc_info:
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
@@ -249,7 +249,7 @@ class TestDuplicateDetection:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ExtractoDuplicadoException):
+            with pytest.raises(ExtractoDuplicadoError):
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
@@ -320,7 +320,7 @@ class TestRejectWhenPeriodoNotDetectable:
     """Tests para Fix #2: Rechazar extractos sin periodo detectable -> 422.
 
     BN-DUP-02 modificado: Si periodo_inicio o periodo_fin es None DESPUES del parseo,
-    se lanza ValidacionFallidaException (422) en lugar de omitir la validacion.
+    se lanza ValidacionFallidaError (422) en lugar de omitir la validacion.
     """
 
     @pytest.mark.asyncio
@@ -332,7 +332,7 @@ class TestRejectWhenPeriodoNotDetectable:
         mock_transaccion_repo: MagicMock,
         tarjeta_id: UUID,
     ):
-        """Fix #2: Si ambos periodos son None post-parseo -> 422 ValidacionFallidaException."""
+        """Fix #2: Si ambos periodos son None post-parseo -> 422 ValidacionFallidaError."""
         # Arrange --------------------------------------------------------
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
         mock_transaccion_repo.bulk_save.return_value = []
@@ -343,7 +343,7 @@ class TestRejectWhenPeriodoNotDetectable:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaException) as exc_info:
+            with pytest.raises(ValidacionFallidaError) as exc_info:
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
@@ -372,7 +372,7 @@ class TestRejectWhenPeriodoNotDetectable:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaException):
+            with pytest.raises(ValidacionFallidaError):
                 await handler.handle_cargar_extracto(cmd)
 
     @pytest.mark.asyncio
@@ -396,7 +396,7 @@ class TestRejectWhenPeriodoNotDetectable:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaException):
+            with pytest.raises(ValidacionFallidaError):
                 await handler.handle_cargar_extracto(cmd)
 
 
@@ -415,7 +415,7 @@ class TestIntegrityErrorSafetyNet:
         periodo_inicio: date,
         periodo_fin: date,
     ):
-        """T007: IntegrityError en save() -> ExtractoDuplicadoException() sin args."""
+        """T007: IntegrityError en save() -> ExtractoDuplicadoError() sin args."""
         # Arrange --------------------------------------------------------
         # get_by_tarjeta_and_periodo retorna None (pre-flight pasa limpio)
         mock_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
@@ -435,7 +435,7 @@ class TestIntegrityErrorSafetyNet:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ExtractoDuplicadoException) as exc_info:
+            with pytest.raises(ExtractoDuplicadoError) as exc_info:
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
@@ -464,7 +464,7 @@ class TestPeriodoValidation:
         mock_transaccion_repo: MagicMock,
         tarjeta_id: UUID,
     ):
-        """Fix #2: Si el parser no extrae periodo -> ValidacionFallidaException (422).
+        """Fix #2: Si el parser no extrae periodo -> ValidacionFallidaError (422).
 
         Verifica que la excepcion tiene error_code VALIDACION_FALLIDA
         y el mensaje indica que no se pudo determinar el periodo.
@@ -480,7 +480,7 @@ class TestPeriodoValidation:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ValidacionFallidaException) as exc_info:
+            with pytest.raises(ValidacionFallidaError) as exc_info:
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------
@@ -513,7 +513,7 @@ class TestFileHashDetection:
         periodo_fin: date,
     ):
         """Fix #3: Si get_by_tarjeta_and_periodo no encuentra match,
-        pero get_by_tarjeta_and_file_hash si -> ExtractoDuplicadoException.
+        pero get_by_tarjeta_and_file_hash si -> ExtractoDuplicadoError.
 
         El file_hash actua como respaldo (fallback) ante el chequeo por periodo.
         """
@@ -537,7 +537,7 @@ class TestFileHashDetection:
             "src.infrastructure.excel.parser.ExtractoExcelParser",
             return_value=mock_parse,
         ):
-            with pytest.raises(ExtractoDuplicadoException) as exc_info:
+            with pytest.raises(ExtractoDuplicadoError) as exc_info:
                 await handler.handle_cargar_extracto(cmd)
 
         # Assert ----------------------------------------------------------

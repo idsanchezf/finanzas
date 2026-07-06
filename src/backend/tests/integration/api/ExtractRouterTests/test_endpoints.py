@@ -96,7 +96,7 @@ def _build_app(
     app = FastAPI()
     app.include_router(extracts_router, prefix="/api/v1/extracts", tags=["Extractos"])
 
-    # Registrar middleware de errores para mapear DomainException -> HTTP status codes
+    # Registrar middleware de errores para mapear DomainError -> HTTP status codes
     from src.api.middleware.error_handler import ErrorHandlerMiddleware
     app.add_middleware(ErrorHandlerMiddleware)
 

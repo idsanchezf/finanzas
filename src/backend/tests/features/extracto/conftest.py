@@ -17,7 +17,7 @@ from pytest_bdd import given, parsers, then, when
 
 from src.application.commands.cargar_extracto import CargarExtractoCommand
 from src.application.handlers.command_handlers import CommandHandler
-from src.domain.exceptions import ExtractoDuplicadoException, ValidacionFallidaException
+from src.domain.exceptions import ExtractoDuplicadoError, ValidacionFallidaError
 from src.domain.repositories import IExtractoRepository, ITransaccionRepository
 
 
@@ -122,11 +122,11 @@ async def _execute_handler_async(
             handler_result = await handler.handle_cargar_extracto(cmd)
             result["data"] = handler_result
             result["status"] = "created"
-        except ValidacionFallidaException as e:
+        except ValidacionFallidaError as e:
             result["status"] = "unprocessable"
             result["error"] = e
             result["mensaje"] = str(e)
-        except ExtractoDuplicadoException as e:
+        except ExtractoDuplicadoError as e:
             result["status"] = "conflict"
             result["error"] = e
             result["extracto_id"] = e.extracto_id
