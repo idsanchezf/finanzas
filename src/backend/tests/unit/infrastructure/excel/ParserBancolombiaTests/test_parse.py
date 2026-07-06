@@ -7,19 +7,18 @@ Verifica parseo de:
 - Cuotas (formato '1/36')
 - Abonos (valores negativos)
 
-Los archivos de prueba estan en la raiz del proyecto:
-7681_ABR2026.xlsx, 7681_ENE2026.xlsx, etc.
-
-Convencion TDD:
-- Carpeta: ParserBancolombiaTests/
-- Archivo: test_parse.py
+Los archivos de prueba estan en fixtures/ dentro del mismo directorio.
 """
 
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
 from src.infrastructure.excel.parser import ExtractoExcelParser
+
+# Directorio de fixtures relativo a este archivo
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
 # ---------------------------------------------------------------------------
@@ -32,14 +31,8 @@ def parser():
 
 
 def _get_test_file(filename: str) -> bytes:
-    """Lee un archivo Excel de prueba desde la raiz del proyecto."""
-    from pathlib import Path
-
-    # La estructura es:
-    #   finance-report/                     <-- raiz del proyecto (7 niveles arriba)
-    #     src/backend/tests/unit/infrastructure/excel/ParserBancolombiaTests/test_parse.py
-    project_root = Path(__file__).resolve().parents[7]
-    filepath = project_root / filename
+    """Lee un archivo Excel de prueba desde el directorio fixtures/."""
+    filepath = FIXTURES_DIR / filename
     return filepath.read_bytes()
 
 
