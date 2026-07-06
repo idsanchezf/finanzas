@@ -76,13 +76,13 @@ class GoogleOAuthService:
             id_token == "dev-token" or id_token.startswith("dev-")
         ):
             return {
-                    "valid": True,
-                    "email": "dev@financereport.local",
-                    "nombre": "Dev User",
-                    "avatar_url": None,
-                    "provider": "google",
-                    "provider_id": "dev-google-id",
-                }
+                "valid": True,
+                "email": "dev@financereport.local",
+                "nombre": "Dev User",
+                "avatar_url": None,
+                "provider": "google",
+                "provider_id": "dev-google-id",
+            }
 
         try:
             payload = await self._fetch_token_info(id_token)

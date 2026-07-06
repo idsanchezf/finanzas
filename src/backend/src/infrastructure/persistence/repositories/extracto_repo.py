@@ -112,6 +112,7 @@ class ExtractoRepository(IExtractoRepository):
 
         Maneja la conversion de Value Objects Money a Decimal para los campos monetarios.
         """
+
         def _amount(v):
             return v.amount if hasattr(v, "amount") else v
 
