@@ -31,7 +31,7 @@ class DomainError(Exception):
 # ============================================================
 
 
-class ExtractoDuplicadoException(DomainError):
+class ExtractoDuplicadoError(DomainError):
     """Se lanza cuando se detecta que un extracto ya existe
     para la misma tarjeta + periodo.
 
@@ -78,7 +78,7 @@ class ExtractoDuplicadoException(DomainError):
         super().__init__(message, error_code="EXTRACTO_DUPLICADO")
 
 
-class ValidacionFallidaException(DomainError):
+class ValidacionFallidaError(DomainError):
     """Error de validacion del archivo Excel (formato no reconocible)."""
 
     def __init__(self, message: str, detalles: dict | None = None) -> None:
@@ -91,7 +91,7 @@ class ValidacionFallidaException(DomainError):
 # ============================================================
 
 
-class TarjetaNoEncontradaException(DomainError):
+class TarjetaNoEncontradaError(DomainError):
     """No se pudo identificar la tarjeta a partir del extracto."""
 
     def __init__(
@@ -112,14 +112,14 @@ class TarjetaNoEncontradaException(DomainError):
 # ============================================================
 
 
-class NoAutenticadoException(DomainError):
+class NoAutenticadoError(DomainError):
     """Token JWT invalido, expirado o no proporcionado."""
 
     def __init__(self, message: str = "Token JWT invalido o expirado") -> None:
         super().__init__(message, error_code="NO_AUTENTICADO")
 
 
-class PermisoDenegadoException(DomainError):
+class PermisoDenegadoError(DomainError):
     """El usuario no tiene permisos para realizar la operacion."""
 
     def __init__(self, message: str = "No tienes permisos para realizar esta operacion") -> None:

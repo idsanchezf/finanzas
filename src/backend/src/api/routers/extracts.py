@@ -94,7 +94,7 @@ async def upload_extract(
         file_content=content,
     )
 
-    # Las excepciones de dominio (ExtractoDuplicadoException, TarjetaNoEncontradaException, etc.)
+    # Las excepciones de dominio (ExtractoDuplicadoError, TarjetaNoEncontradaError, etc.)
     # se propagan al middleware ErrorHandlerMiddleware que las mapea a HTTP status codes adecuados:
     #   - EXTRACTO_DUPLICADO    -> 409 Conflict
     #   - TARJETA_NO_ENCONTRADA -> 404 Not Found

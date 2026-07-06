@@ -95,9 +95,9 @@ class ExtractoRepository(IExtractoRepository):
             await self.session.flush()
         except IntegrityError:
             await self.session.rollback()
-            from src.domain.exceptions import ExtractoDuplicadoException
+            from src.domain.exceptions import ExtractoDuplicadoError
 
-            raise ExtractoDuplicadoException() from None
+            raise ExtractoDuplicadoError() from None
 
         return modelo
 

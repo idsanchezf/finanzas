@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.domain.exceptions import (
     DomainError,
-    ExtractoDuplicadoException,
+    ExtractoDuplicadoError,
 )
 
 logger = structlog.get_logger(__name__)
@@ -49,7 +49,7 @@ async def handle_domain_exception(request: Request, exc: DomainError) -> JSONRes
     }
 
     # Enriquecer con datos adicionales para casos especificos
-    if isinstance(exc, ExtractoDuplicadoException):
+    if isinstance(exc, ExtractoDuplicadoError):
         body.update(
             {
                 "extracto_id": str(exc.extracto_id) if exc.extracto_id else None,

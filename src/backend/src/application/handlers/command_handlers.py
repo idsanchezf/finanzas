@@ -28,7 +28,7 @@ from src.domain.entities.meta_ahorro import MetaAhorro
 from src.domain.entities.presupuesto import Presupuesto
 from src.domain.entities.transaccion import Transaccion
 from src.domain.events import ExtractoDuplicadoDetectado
-from src.domain.exceptions import ExtractoDuplicadoException
+from src.domain.exceptions import ExtractoDuplicadoError
 from src.domain.repositories import (
     ICategoriaRepository,
     IExtractoRepository,
@@ -110,7 +110,7 @@ class CommandHandler:
             except ImportError:
                 pass
 
-            raise ExtractoDuplicadoException(
+            raise ExtractoDuplicadoError(
                 extracto_id_existente=extracto_por_hash.id,
                 tarjeta_id=cmd.tarjeta_id,
             )
@@ -272,7 +272,7 @@ class CommandHandler:
                 except ImportError:
                     pass
 
-                raise ExtractoDuplicadoException(
+                raise ExtractoDuplicadoError(
                     extracto_id_existente=extracto_existente.id,
                     tarjeta_id=cmd.tarjeta_id,
                     periodo_inicio=periodo_inicio,
@@ -316,7 +316,7 @@ class CommandHandler:
             except ImportError:
                 pass
 
-            raise ExtractoDuplicadoException() from err
+            raise ExtractoDuplicadoError() from err
 
         # 5.5 Persistir transacciones DESPUES del extracto (Fix #1)
         #    El extracto ya existe en BD, las FKs son validas
