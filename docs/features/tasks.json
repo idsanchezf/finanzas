@@ -1,0 +1,499 @@
+{
+  "project": "Finance Report",
+  "version": "1.0.0-MVP",
+  "created_at": "2026-06-02",
+  "phase": "design",
+  "featureId": "FEAT-MVP",
+  "featureName": "MVP Finance Report — Clasificacion y Analisis de Gastos Personales",
+  "description": "Implementacion completa del MVP: carga de extractos Excel, clasificacion hibrida, dashboard mobile-first con 7 visualizaciones, deteccion de 8 malos habitos financieros, presupuestos/metas, asistente IA con chat, notificaciones push/email, exportacion PDF/Excel.",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "Scaffold: Crear estructura de proyecto Python (FastAPI) con Clean Architecture",
+      "category": "scaffold",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Generar estructura de carpetas: src/domain, src/application, src/infrastructure, src/presentation. Crear pyproject.toml con dependencias (fastapi, sqlalchemy, alembic, pydantic, structlog, etc.). Configurar Dockerfile multi-stage."
+    },
+    {
+      "id": "T-002",
+      "title": "Scaffold: Crear proyecto Next.js 14 con TypeScript y Tailwind CSS",
+      "category": "scaffold",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Inicializar Next.js 14 con App Router. Configurar Tailwind CSS, ESLint, Prettier. Estructura de carpetas: app/, components/, hooks/, lib/, types/. Configurar PWA (next-pwa)."
+    },
+    {
+      "id": "T-003",
+      "title": "Scaffold: Crear workers Python (ExtractProc, ClassSvc, NotifSvc)",
+      "category": "scaffold",
+      "service": "workers",
+      "status": "pending",
+      "description": "Crear estructura de workers como modulos Python independientes con entrypoint comun. Configurar Dockerfiles individuales. Configurar aio_pika para RabbitMQ."
+    },
+    {
+      "id": "T-004",
+      "title": "Scaffold: Configurar Docker Compose para desarrollo local",
+      "category": "scaffold",
+      "service": "infrastructure",
+      "status": "pending",
+      "description": "docker-compose.yml con servicios: postgres, redis, rabbitmq, minio (local), fastapi, nextjs, workers. Volumenes y health checks."
+    },
+    {
+      "id": "T-005",
+      "title": "Scaffold: Configurar GitHub Actions CI/CD",
+      "category": "scaffold",
+      "service": "infrastructure",
+      "status": "pending",
+      "description": "Workflows: test.yml (pytest + vitest en PR), build.yml (Docker build + push), deploy.yml (Vercel + Oracle OKE)."
+    },
+    {
+      "id": "T-006",
+      "title": "Scaffold: Configurar Kubernetes manifests (Oracle OKE)",
+      "category": "scaffold",
+      "service": "infrastructure",
+      "status": "pending",
+      "description": "k8s/ manifests: namespace, deployments (api, extract-proc, class-svc, notif-svc), services, configmaps, secrets, HPA, ingress."
+    },
+    {
+      "id": "T-007",
+      "title": "Dominio: Crear value object Money (monto + moneda, Decimal)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Implementar value object Money con Decimal para precision financiera. Metodos: add, subtract, multiply, percentage. Tests unitarios TDD."
+    },
+    {
+      "id": "T-008",
+      "title": "Dominio: Crear value object PeriodoFacturacion",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Value object con fecha_inicio, fecha_fin. Validacion: inicio < fin. Metodo: contiene_fecha(date). Tests TDD."
+    },
+    {
+      "id": "T-009",
+      "title": "Dominio: Crear value object ConfianzaClasificacion",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Value object con nivel (0-100) y zona: ALTA (>90), MEDIA (70-90), BAJA (<70). Metodo: requiere_revision(). Tests TDD."
+    },
+    {
+      "id": "T-010",
+      "title": "Dominio: Crear entidad Usuario con eventos de dominio",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Entidad Usuario con atributos: email, nombre, auth_provider, 2fa. Evento UsuarioRegistrado. Tests TDD."
+    },
+    {
+      "id": "T-011",
+      "title": "Dominio: Crear entidad Tarjeta",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Entidad con banco, ultimos_4_digitos, tipo, alias. Regla: nunca almacenar numero completo. Tests TDD."
+    },
+    {
+      "id": "T-012",
+      "title": "Dominio: Crear Aggregate Root Extracto con Transacciones",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Extracto como aggregate root. Contiene coleccion de Transaccion (entidad hija). Invariantes: unicidad por (tarjeta_id, periodo_inicio, periodo_fin). Estados: PENDING, PARSING, CLASSIFYING, COMPLETED, ERROR. Eventos: ExtractoCargado. Tests TDD."
+    },
+    {
+      "id": "T-013",
+      "title": "Dominio: Crear entidad Transaccion con reglas de cuotas",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Entidad con todas las columnas del extracto. Logica: BN-02 (parent transaccion), BN-03 (abonos), BN-04 (contado 1/1), BN-05 (cuotas >1), BN-06 (intereses). Tests TDD."
+    },
+    {
+      "id": "T-014",
+      "title": "Dominio: Crear entidad Categoria con subcategorias",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Entidad jerarquica con parent_id. 14 categorias predefinidas como seed. Palabras clave como JSONB. Tests TDD."
+    },
+    {
+      "id": "T-015",
+      "title": "Dominio: Crear entidades Presupuesto, MetaAhorro, Notificacion",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Presupuesto con limite y alertas. MetaAhorro con monto objetivo y acumulado. Notificacion con tipo, canal, estado. Tests TDD."
+    },
+    {
+      "id": "T-016",
+      "title": "Dominio: Definir interfaces de repositorio (Repository Pattern)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Interfaces: IExtractoRepository, ITransaccionRepository, ICategoriaRepository, IUsuarioRepository, IPresupuestoRepository, IMetaAhorroRepository. Metodos CRUD + queries especificas."
+    },
+    {
+      "id": "T-017",
+      "title": "Dominio: Definir eventos de dominio",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Clases de eventos: ExtractoCargado, ExtractoProcesado, TransaccionClasificada, CategoriaCorregida, PresupuestoAlcanzado, HabitoDetectado, RecordatorioPendiente."
+    },
+    {
+      "id": "T-018",
+      "title": "Infraestructura: Implementar repositorios con SQLAlchemy 2.0 async",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Implementar interfaces de repositorio usando SQLAlchemy 2.0 con async session. Mapeo de entidades de dominio a modelos ORM. Tests de integracion con PostgreSQL."
+    },
+    {
+      "id": "T-019",
+      "title": "Infraestructura: Configurar Alembic y crear migraciones iniciales",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Inicializar Alembic. Crear migracion inicial con todas las tablas: usuarios, tarjetas, extractos, transacciones, categorias, presupuestos, metas, notificaciones, traducciones_comercios, chat_sessions, chat_messages."
+    },
+    {
+      "id": "T-020",
+      "title": "Infraestructura: Implementar Publicador de eventos (RabbitMQ)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Clase RabbitMQEventPublisher con aio_pika. Publica eventos de dominio al exchange finance.events con routing key por topico. Tests de integracion."
+    },
+    {
+      "id": "T-021",
+      "title": "Infraestructura: Implementar Consumidor de eventos base (RabbitMQ)",
+      "category": "backend",
+      "service": "workers",
+      "status": "pending",
+      "description": "Clase base RabbitMQConsumer con idempotencia (dedup por message_id), retry con backoff, DLQ. Cada worker hereda y define su handler."
+    },
+    {
+      "id": "T-022",
+      "title": "Infraestructura: Implementar cache Redis (dashboard, sesiones, rate limiting)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "CacheService con redis-py async. Metodos: get/set con TTL, invalidate por patron. RateLimiter con token bucket. Tests de integracion con fakeredis."
+    },
+    {
+      "id": "T-023",
+      "title": "Infraestructura: Implementar Object Storage (Cloudflare R2 / boto3)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "StorageService con boto3. Metodos: upload (extractos Excel), download, generate_presigned_url, delete. Buckets: extracts, reports (TTL 30d), models. Tests con moto."
+    },
+    {
+      "id": "T-024",
+      "title": "Infraestructura: Implementar autenticacion OAuth2 (Google/Microsoft) + JWT",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "OAuth2 flow con Google y Microsoft. Verificar id_token del proveedor. Generar JWT propio (access_token 15min + refresh_token 30d). Middleware de autenticacion en FastAPI. Endpoints /auth/*."
+    },
+    {
+      "id": "T-025",
+      "title": "Infraestructura: Implementar 2FA TOTP",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Generar secreto TOTP, generar QR code URL. Verificar codigo. Habilitar/deshabilitar 2FA. Middleware que requiere 2FA si esta habilitado."
+    },
+    {
+      "id": "T-026",
+      "title": "Infraestructura: Configurar OpenTelemetry + structlog",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Configurar OpenTelemetry SDK para FastAPI (auto-instrumentation). structlog con formato JSON. Correlation ID middleware. Exportar a Grafana Cloud (OTLP)."
+    },
+    {
+      "id": "T-027",
+      "title": "Infraestructura: Implementar Gemini 1.5 Flash integration con fallback Groq",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "LLMService con estrategia multi-proveedor. Gemini primario, Groq fallback. Function calling: definir tools (consultar_transacciones, consultar_categorias, etc.). Streaming de tokens async. Circuit breaker."
+    },
+    {
+      "id": "T-028",
+      "title": "Worker: Implementar Procesador de Extractos (ExtractProc)",
+      "category": "backend",
+      "service": "workers",
+      "status": "pending",
+      "description": "Consumir evento ExtractoCargado. Descargar Excel de R2. Parseo inteligente con openpyxl: detectar secciones (metadata, transacciones, separadores), sub-filas VR MONEDA ORIG, encabezados repetidos. Extraer metadatos. Validar integridad (suma movimientos vs pago total). Detectar cuotas (BN-04, BN-05). Persistir en BD. Publicar ExtractoProcesado. Tests con archivos Excel de ejemplo reales."
+    },
+    {
+      "id": "T-029",
+      "title": "Worker: Implementar Servicio de Clasificacion (ClassSvc)",
+      "category": "backend",
+      "service": "workers",
+      "status": "pending",
+      "description": "Consumir evento ExtractoProcesado. Pipeline: (1) Reglas deterministicas con palabras clave/regex, (2) TF-IDF + cosine similarity con sentence-transformers. Calcular confidence. Asignar categoria. Publicar TransaccionClasificada. Consumir CategoriaCorregida para online learning. Tests con datos reales del extracto."
+    },
+    {
+      "id": "T-030",
+      "title": "Worker: Implementar Servicio de Notificaciones (NotifSvc)",
+      "category": "backend",
+      "service": "workers",
+      "status": "pending",
+      "description": "Consumir eventos: RecordatorioPendiente, PresupuestoAlcanzado, HabitoDetectado. Canales: Web Push (pywebpush con VAPID) + Email (SendGrid/Resend API). Scheduler APScheduler para recordatorios programados (fecha limite pago, corte). Tests."
+    },
+    {
+      "id": "T-031",
+      "title": "Aplicacion: Crear Comando CargarExtracto (CQRS)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Command: CargarExtracto con handler. Validar archivo (.xlsx, tamaño max). Guardar en R2. Registrar extracto PENDING en BD. Publicar ExtractoCargado. Retornar extract_id. Tests unitarios + integracion."
+    },
+    {
+      "id": "T-032",
+      "title": "Aplicacion: Crear Query ConsultarExtractos (CQRS)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Query paginada con filtros: tarjeta_id, estado, periodo. Incluye metadatos de resumen financiero. Cache Redis para lista (TTL 30s). Tests."
+    },
+    {
+      "id": "T-033",
+      "title": "Aplicacion: Crear Queries del Dashboard (KPIs, graficos)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Queries para: summary (KPIs RF03.1), by-category (donut RF03.2), daily (barras apiladas RF03.3), monthly-trend (linea RF03.4), treemap (RF03.5), installments (proyeccion RF03.6), calendar-heatmap (RF03.7). Agregaciones SQL con indices optimizados. Cache Redis TTL 60s. Tests."
+    },
+    {
+      "id": "T-034",
+      "title": "Aplicacion: Crear Query de Insights y Score de salud financiera",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Logica para detectar 8 malos habitos (RF04.1-RF04.7). Calculo de score 0-100 con 5 componentes ponderados (RF04.8). Tests unitarios para cada detector de habito."
+    },
+    {
+      "id": "T-035",
+      "title": "Aplicacion: Crear Comandos/Queries de Presupuestos y Metas",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "CRUD presupuestos con validacion (BN-10: periodo de facturacion). Progreso en tiempo real (barra visual). Simulador 'que pasaria si' con proyecciones a 1/3/6/12 meses. Tests."
+    },
+    {
+      "id": "T-036",
+      "title": "Aplicacion: Crear Comando/Query de Chat IA con streaming SSE",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Endpoint POST /chat con streaming SSE. Integrar Gemini function calling para consultar BD desde lenguaje natural. Gestion de sesiones de chat (CRUD). Generar mini-graficos en respuestas. Tests."
+    },
+    {
+      "id": "T-037",
+      "title": "Aplicacion: Crear Comando CorregirCategoria con propagacion retroactiva",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Handler para PATCH /transactions/{id}/category. Propagar cambio a todas las transacciones del mismo comercio (BN-09). Publicar CategoriaCorregida (dispara reentrenamiento ML). Tests."
+    },
+    {
+      "id": "T-038",
+      "title": "Aplicacion: Crear Comando ClasificacionMasiva",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Handler para PATCH /transactions/bulk/category. Validar que todas las transacciones pertenezcan al usuario. Asignar categoria en lote. Tests."
+    },
+    {
+      "id": "T-039",
+      "title": "Aplicacion: Crear Query de Traduccion de Comercios",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Busqueda de traduccion amigable con cache Redis. Sugerir nueva traduccion (colaborativo). Ranking de comercios por frecuencia/monto. Tests."
+    },
+    {
+      "id": "T-040",
+      "title": "Presentacion: Crear endpoints REST con FastAPI (todos los grupos)",
+      "category": "backend",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Implementar routers FastAPI para los 10 grupos de endpoints definidos en contratos API. Validacion Pydantic. Documentacion OpenAPI automatica. Dependency injection. Tests de integracion (TestClient + BD real)."
+    },
+    {
+      "id": "T-041",
+      "title": "Frontend: Crear layout mobile-first con Tailwind CSS y App Router",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Layout raiz con: sidebar/bottom-nav (mobile), header con avatar y notificaciones. Componentes: BottomNav, Sidebar, Header, UserMenu. Responsive breakpoints: 320, 480, 768, 1024. Temas claro/oscuro."
+    },
+    {
+      "id": "T-042",
+      "title": "Frontend: Crear pagina de carga de extractos (Upload Page)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Dropzone para archivos .xlsx. Barra de progreso con polling (GET /extracts/{id}/status). Estados: subiendo → analizando → clasificando → completado. Mensajes de feedback. Vista de resultado con resumen (N transacciones, % clasificadas)."
+    },
+    {
+      "id": "T-043",
+      "title": "Frontend: Crear pagina Dashboard — KPIs + graficos",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Pagina principal con: (1) KPIs cards (total gastado, ingresos, promedio diario, % cupo, dias corte, variacion). (2) Donut chart por categoria con drill-down. (3) Barras apiladas de gasto diario. Integrar Recharts/Tremor."
+    },
+    {
+      "id": "T-044",
+      "title": "Frontend: Crear pagina Dashboard — Tendencia mensual + Treemap",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Grafico de linea con tendencia mensual (6-12 meses). Treemap jerarquico de categorias/subcategorias. Filtros interactivos de periodo y tarjeta."
+    },
+    {
+      "id": "T-045",
+      "title": "Frontend: Crear pagina Proyeccion de Cuotas",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Grafico de barras horizontales con timeline de cuotas pendientes. Tooltip con: cuota mensual, interes pagado, capital pendiente, fecha liberacion. Semaforo de proxima liberacion."
+    },
+    {
+      "id": "T-046",
+      "title": "Frontend: Crear pagina Heatmap Calendario + Score",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Calendario anual tipo GitHub contributions. Intensidad de color por gasto diario. Tooltip con top 3 transacciones del dia. Gauge de score de salud financiera con zonas verde/amarillo/rojo."
+    },
+    {
+      "id": "T-047",
+      "title": "Frontend: Crear pagina de Transacciones (tabla con filtros)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Tabla paginada con: fecha, comercio (original + traducido), valor, categoria, confidence. Filtros: extracto, categoria, busqueda, confianza baja. Seleccion multiple para clasificacion masiva. Modal de detalle con info de cuotas y moneda original."
+    },
+    {
+      "id": "T-048",
+      "title": "Frontend: Crear pagina de Categorias (gestion)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Lista de categorias con jerarquia expandible. Icono + color. Crear/editar/eliminar categorias personalizadas. Modal de confirmacion para eliminacion. Vista de estadisticas por categoria."
+    },
+    {
+      "id": "T-049",
+      "title": "Frontend: Crear pagina de Presupuestos y Metas",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Lista de presupuestos con barra de progreso (verde→rojo). Crear/editar/eliminar. Metas de ahorro con % completado y fecha proyectada. Simulador 'que pasaria si' con sliders interactivos."
+    },
+    {
+      "id": "T-050",
+      "title": "Frontend: Crear pagina de Insights y Habitos",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Tarjetas de alertas detectadas con: tipo, titulo, descripcion, accion sugerida, severidad (icono). Suscripciones fantasma con monto acumulado y boton '¿Aún lo usas?'. Gasto emocional por dia de semana. Micro-gastos frecuentes."
+    },
+    {
+      "id": "T-051",
+      "title": "Frontend: Crear Chat IA integrado (modal/panel lateral)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Componente Chat con: input de texto, historial de mensajes (user/assistant), streaming SSE de tokens en tiempo real. Mini-graficos en respuestas (chart_data). Sugerencias proactivas (chips). Sesiones guardadas."
+    },
+    {
+      "id": "T-052",
+      "title": "Frontend: Crear pagina de Notificaciones + preferencias",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Lista de notificaciones in-app con indicador de no leidas. Toggle de canales (push/email). Preferencias por tipo (recordatorio pago, alerta presupuesto, resumen semanal, etc.). Solicitar permiso Web Push."
+    },
+    {
+      "id": "T-053",
+      "title": "Frontend: Crear pagina de Exportacion (PDF/Excel)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Selector de secciones a incluir en reporte. Generacion de PDF (servidor) y Excel (datos crudos). Boton de descarga con loading state."
+    },
+    {
+      "id": "T-054",
+      "title": "Frontend: Crear pagina de Onboarding interactivo",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Tour guiado con extracto de ejemplo precargado. Destacar: carga de extractos, clasificacion automatica, dashboard, chat IA. Tooltips en cada seccion. Opcion 'saltar'."
+    },
+    {
+      "id": "T-055",
+      "title": "Frontend: Implementar PWA (Service Worker + manifest)",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Configurar next-pwa. Service Worker para cache offline de dashboards consultados. Web manifest con iconos, nombre corto, theme-color. Instalable en home screen (Android/iOS)."
+    },
+    {
+      "id": "T-056",
+      "title": "Frontend: Crear pagina de Perfil y Configuracion",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Datos de usuario (nombre, email, avatar). Vincular/desvincular tarjetas. Configurar 2FA. Preferencias: idioma, moneda default, umbral de alerta de transaccion grande. Cerrar sesion."
+    },
+    {
+      "id": "T-057",
+      "title": "Frontend: Crear pagina de Historial y Comparativas",
+      "category": "frontend",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Tabla pivote: categorias vs meses con colores condicionales (rojo/verde). Comparativa interanual. Ranking de comercios (top 10 por monto y frecuencia) con indicador de tendencia."
+    },
+    {
+      "id": "T-058",
+      "title": "Testing: Configurar testcontainers para integracion (PostgreSQL, Redis, RabbitMQ)",
+      "category": "testing",
+      "service": "api-gateway",
+      "status": "pending",
+      "description": "Configurar pytest con testcontainers-python. Fixtures: postgres_container, redis_container, rabbitmq_container. Tests de integracion con BD real."
+    },
+    {
+      "id": "T-059",
+      "title": "Testing: Crear pruebas E2E con Playwright (flujo principal)",
+      "category": "testing",
+      "service": "web-app",
+      "status": "pending",
+      "description": "Flujo completo: login → cargar extracto → ver dashboard → cambiar categoria → consultar chat IA. Pruebas en viewports movil (375px) y desktop (1440px)."
+    },
+    {
+      "id": "T-060",
+      "title": "Testing: Crear pruebas de contrato (Pact) entre Frontend y API",
+      "category": "testing",
+      "service": "all",
+      "status": "pending",
+      "description": "Configurar Pact. Contratos para endpoints criticos: extractos, transacciones, dashboard, chat. Verificar en CI que frontend y API no rompan compatibilidad."
+    },
+    {
+      "id": "T-061",
+      "title": "Documentacion: Generar README.md del proyecto",
+      "category": "documentation",
+      "service": "all",
+      "status": "pending",
+      "description": "README con: descripcion, stack, arquitectura (link a docs/architecture.md), setup local (docker compose), estructura de proyectos, comandos (test, lint, build), despliegue."
+    }
+  ]
+}
