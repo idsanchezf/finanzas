@@ -107,6 +107,23 @@ class TarjetaNoEncontradaError(DomainError):
         super().__init__(message, error_code="TARJETA_NO_ENCONTRADA")
 
 
+class EntidadNoEncontradaError(DomainError):
+    """Entidad solicitada no encontrada (404 generico para transacciones, extractos, etc.)."""
+
+    def __init__(
+        self,
+        entidad: str = "Entidad",
+        entidad_id: str | UUID | None = None,
+        message: str | None = None,
+    ) -> None:
+        self.entidad = entidad
+        self.entidad_id = str(entidad_id) if entidad_id else None
+        if message is None:
+            id_str = f" con ID {entidad_id}" if entidad_id else ""
+            message = f"{entidad}{id_str} no encontrada"
+        super().__init__(message, error_code="ENTIDAD_NO_ENCONTRADA")
+
+
 # ============================================================
 # Auth
 # ============================================================

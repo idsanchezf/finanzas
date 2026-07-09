@@ -6,6 +6,7 @@ Usan sesiones async de SQLAlchemy para operaciones de base de datos.
 
 from src.infrastructure.persistence.repositories.categoria_repo import CategoriaRepository
 from src.infrastructure.persistence.repositories.extracto_repo import ExtractoRepository
+from src.infrastructure.persistence.repositories.presupuesto_repo import PresupuestoRepository
 from src.infrastructure.persistence.repositories.refresh_token_repo import RefreshTokenRepository
 from src.infrastructure.persistence.repositories.tarjeta_repo import TarjetaRepository
 from src.infrastructure.persistence.repositories.transaccion_repo import TransaccionRepository
@@ -17,5 +18,6 @@ __all__ = [
     "ExtractoRepository",
     "TransaccionRepository",
     "CategoriaRepository",
+    "PresupuestoRepository",
     "RefreshTokenRepository",
 ]

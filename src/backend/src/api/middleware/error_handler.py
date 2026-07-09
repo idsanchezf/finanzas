@@ -22,6 +22,7 @@ logger = structlog.get_logger(__name__)
 EXCEPTION_STATUS_MAP: dict[str, int] = {
     "EXTRACTO_DUPLICADO": 409,
     "TARJETA_NO_ENCONTRADA": 404,
+    "ENTIDAD_NO_ENCONTRADA": 404,
     "VALIDACION_FALLIDA": 422,
     "NO_AUTENTICADO": 401,
     "PERMISO_DENEGADO": 403,

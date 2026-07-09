@@ -17,6 +17,7 @@ from src.application.handlers.query_handlers import QueryHandler
 from src.infrastructure.persistence.repositories import (
     CategoriaRepository,
     ExtractoRepository,
+    PresupuestoRepository,
     TarjetaRepository,
     TransaccionRepository,
     UsuarioRepository,
@@ -88,6 +89,12 @@ async def get_tarjeta_repo(
     return TarjetaRepository(session)
 
 
+async def get_presupuesto_repo(
+    session: AsyncSession = Depends(get_db_session),
+) -> PresupuestoRepository:
+    return PresupuestoRepository(session)
+
+
 # ============================================================
 # Handlers CQRS
 # ============================================================
@@ -95,6 +102,8 @@ async def get_command_handler(
     extracto_repo: ExtractoRepository = Depends(get_extracto_repo),
     transaccion_repo: TransaccionRepository = Depends(get_transaccion_repo),
     categoria_repo: CategoriaRepository = Depends(get_categoria_repo),
+    tarjeta_repo: TarjetaRepository = Depends(get_tarjeta_repo),
+    presupuesto_repo: PresupuestoRepository = Depends(get_presupuesto_repo),
     usuario_repo: UsuarioRepository = Depends(get_usuario_repo),
     evento_bus: Any = None,
 ) -> CommandHandler:
@@ -102,7 +111,8 @@ async def get_command_handler(
         extracto_repo=extracto_repo,
         transaccion_repo=transaccion_repo,
         categoria_repo=categoria_repo,
-        presupuesto_repo=None,  # Implementacion pendiente
+        presupuesto_repo=presupuesto_repo,
+        tarjeta_repo=tarjeta_repo,
         usuario_repo=usuario_repo,
         event_bus=evento_bus,
     )

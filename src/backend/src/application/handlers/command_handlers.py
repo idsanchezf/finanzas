@@ -28,11 +28,16 @@ from src.domain.entities.meta_ahorro import MetaAhorro
 from src.domain.entities.presupuesto import Presupuesto
 from src.domain.entities.transaccion import Transaccion
 from src.domain.events import ExtractoDuplicadoDetectado
-from src.domain.exceptions import ExtractoDuplicadoError
+from src.domain.exceptions import (
+    EntidadNoEncontradaError,
+    ExtractoDuplicadoError,
+    ValidacionFallidaError,
+)
 from src.domain.repositories import (
     ICategoriaRepository,
     IExtractoRepository,
     IPresupuestoRepository,
+    ITarjetaRepository,
     ITransaccionRepository,
     IUsuarioRepository,
 )
@@ -54,6 +59,7 @@ class CommandHandler:
         transaccion_repo: ITransaccionRepository,
         categoria_repo: ICategoriaRepository,
         presupuesto_repo: IPresupuestoRepository,
+        tarjeta_repo: ITarjetaRepository,
         usuario_repo: IUsuarioRepository,
         event_bus: Any | None = None,
     ) -> None:
@@ -61,6 +67,7 @@ class CommandHandler:
         self.transaccion_repo = transaccion_repo
         self.categoria_repo = categoria_repo
         self.presupuesto_repo = presupuesto_repo
+        self.tarjeta_repo = tarjeta_repo
         self.usuario_repo = usuario_repo
         self.event_bus = event_bus
 
@@ -166,6 +173,23 @@ class CommandHandler:
 
             extracto.metadatos = meta
             extracto.avanzar_parseo(40)
+
+            # feat-004: Propagar ultimos 4 digitos y banco extraidos a la entidad Tarjeta
+            # Si el parser extrajo info de la tarjeta, actualizar la tarjeta asociada
+            if "ultimos_4_digitos" in meta:
+                tarjeta = await self.tarjeta_repo.get_by_id(cmd.tarjeta_id)
+                if tarjeta:
+                    tarjeta.ultimos_4_digitos = meta["ultimos_4_digitos"]
+                    if "banco" in meta:
+                        tarjeta.banco = meta["banco"]
+                    await self.tarjeta_repo.save(tarjeta)
+                    logger.info(
+                        "Tarjeta actualizada desde metadata del extracto | "
+                        "tarjeta_id=%s ultimos_4_digitos=%s banco=%s",
+                        str(cmd.tarjeta_id),
+                        meta["ultimos_4_digitos"],
+                        meta.get("banco", "no especificado"),
+                    )
 
             # 4. Crear entidades Transaccion en memoria (NO persistir aun)
             #    Se persistiran despues de guardar el extracto (Fix #1)
@@ -370,19 +394,55 @@ class CommandHandler:
     async def handle_clasificar_transaccion(
         self, cmd: ClasificarTransaccionCommand
     ) -> dict[str, Any]:
-        """Clasifica una transaccion individual con el motor hibrido."""
+        """Clasifica una transaccion individual con el motor hibrido.
+
+        1. Obtiene la transaccion del repositorio.
+        2. Carga todas las categorias del usuario.
+        3. Invoca ClasificadorReglas (motor deterministico por palabras clave).
+        4. Si hay match, actualiza categoria_id + confidence y persiste.
+        5. Retorna el resultado con metadata de clasificacion.
+        """
         transaccion = await self.transaccion_repo.get_by_id(cmd.transaccion_id)
         if not transaccion:
-            raise ValueError(f"Transaccion {cmd.transaccion_id} no encontrada")
+            raise EntidadNoEncontradaError(
+                entidad="Transaccion", entidad_id=cmd.transaccion_id
+            )
 
-        # Obtener categorias y clasificar
-        await self.categoria_repo.get_all(cmd.usuario_id)
-        # La clasificacion real se delega al motor de clasificacion (infraestructura)
-        # Aqui solo se actualiza el estado
+        # Obtener todas las categorias del usuario para el motor de reglas
+        categorias = await self.categoria_repo.get_all(cmd.usuario_id)
+
+        # Clasificar usando el motor deterministico (fase 1 del pipeline hibrido)
+        from src.infrastructure.excel.clasificador_reglas import ClasificadorReglas
+
+        clasificador = ClasificadorReglas()
+        comercio = transaccion.comercio_original or ""
+        categoria_id, confidence = clasificador.clasificar_por_reglas(
+            comercio, categorias
+        )
+
+        # Si se encontro una clasificacion, persistir el resultado
+        if categoria_id is not None:
+            transaccion.categoria_id = categoria_id
+            transaccion.confidence = confidence
+            await self.transaccion_repo.save(transaccion)
+            logger.info(
+                "Transaccion clasificada automaticamente | transaccion_id=%s "
+                "categoria_id=%s confidence=%.1f comercio=%s",
+                str(cmd.transaccion_id),
+                str(categoria_id),
+                confidence,
+                comercio[:50],
+            )
 
         return {
             "transaccion_id": str(transaccion.id),
-            "categoria_id": str(transaccion.categoria_id) if transaccion.categoria_id else None,
+            "categoria_id": str(transaccion.categoria_id)
+            if transaccion.categoria_id
+            else None,
+            "confidence": float(transaccion.confidence)
+            if transaccion.confidence
+            else None,
+            "clasificado": categoria_id is not None,
         }
 
     async def handle_clasificacion_masiva(
@@ -399,7 +459,7 @@ class CommandHandler:
         for tid in cmd.transaccion_ids:
             model = await self.transaccion_repo.get_by_id(tid)
             if model is None:
-                raise ValueError(f"Transaccion {tid} no encontrada")
+                raise EntidadNoEncontradaError(entidad="Transaccion", entidad_id=tid)
             transacciones_model.append(model)
 
         # Actualizar via bulk UPDATE (eficiente para multiples filas)
@@ -439,7 +499,9 @@ class CommandHandler:
         # Obtener entidad de dominio (con metodos de negocio)
         transaccion = await self.transaccion_repo.get_entity_by_id(cmd.transaccion_id)
         if not transaccion:
-            raise ValueError(f"Transaccion {cmd.transaccion_id} no encontrada")
+            raise EntidadNoEncontradaError(
+                entidad="Transaccion", entidad_id=cmd.transaccion_id
+            )
 
         # Ejecutar logica de dominio: actualiza categoria + confidence + genera evento
         events = transaccion.corregir_categoria(cmd.categoria_id)
@@ -481,7 +543,7 @@ class CommandHandler:
     async def handle_crear_presupuesto(self, cmd: CrearPresupuestoCommand) -> dict[str, Any]:
         """Crea un presupuesto mensual por categoria."""
         if cmd.limite_mensual <= 0:
-            raise ValueError("El limite mensual debe ser mayor a 0")
+            raise ValidacionFallidaError("El limite mensual debe ser mayor a 0")
 
         presupuesto = Presupuesto(
             usuario_id=cmd.usuario_id,
@@ -496,7 +558,7 @@ class CommandHandler:
     async def handle_crear_meta(self, cmd: CrearMetaAhorroCommand) -> dict[str, Any]:
         """Crea una meta de ahorro."""
         if cmd.monto_objetivo <= 0:
-            raise ValueError("El monto objetivo debe ser mayor a 0")
+            raise ValidacionFallidaError("El monto objetivo debe ser mayor a 0")
 
         meta = MetaAhorro(
             usuario_id=cmd.usuario_id,
@@ -504,9 +566,11 @@ class CommandHandler:
             monto_objetivo=cmd.monto_objetivo,
             fecha_deseada=cmd.fecha_deseada,
         )
-        # Nota: El repositorio de meta ahorro se implementaria en infraestructura
+        # feat-004: Persistir la meta de ahorro via PresupuestoRepository
+        saved = await self.presupuesto_repo.save_meta(meta)  # type: ignore[attr-defined]
         return {
-            "id": str(meta.id),
-            "nombre": meta.nombre,
-            "monto_objetivo": str(meta.monto_objetivo),
+            "id": str(saved.id),
+            "nombre": saved.nombre,
+            "monto_objetivo": str(saved.monto_objetivo),
+            "monto_acumulado": str(saved.monto_acumulado),
         }
