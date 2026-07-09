@@ -68,7 +68,9 @@ def _create_test_excel() -> bytes:
 class MockStorageClient:
     """Mock del cliente R2 Storage."""
 
-    def upload_file(self, bucket: str, key: str, file_content: bytes | None = None, file_path: str | None = None) -> str:
+    def upload_file(
+        self, bucket: str, key: str, file_content: bytes | None = None, file_path: str | None = None
+    ) -> str:
         return f"https://r2.test/{bucket}/{key}"
 
     def download_file(self, bucket: str, key: str) -> bytes:
@@ -98,6 +100,7 @@ def _build_app(
 
     # Registrar middleware de errores para mapear DomainError -> HTTP status codes
     from src.api.middleware.error_handler import ErrorHandlerMiddleware
+
     app.add_middleware(ErrorHandlerMiddleware)
 
     # Override: current user
@@ -222,7 +225,13 @@ class TestUploadEndpoint:
             response = await client.post(
                 "/api/v1/extracts/upload",
                 params={"tarjeta_id": tarjeta_id},
-                files={"file": ("test_extracto.xlsx", test_excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                files={
+                    "file": (
+                        "test_extracto.xlsx",
+                        test_excel,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                },
             )
 
         # Assert ----------------------------------------------------------
@@ -259,7 +268,13 @@ class TestUploadEndpoint:
             response = await client.post(
                 "/api/v1/extracts/upload",
                 params={"tarjeta_id": tarjeta_id},
-                files={"file": ("large.xlsx", large_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                files={
+                    "file": (
+                        "large.xlsx",
+                        large_content,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                },
             )
 
         # Assert ----------------------------------------------------------
@@ -275,7 +290,9 @@ class TestListExtractsEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_ListExtracts_When_UserHasExtracts(
-        self, app: FastAPI, session_factory,
+        self,
+        app: FastAPI,
+        session_factory,
     ) -> None:
         """Lista extractos del usuario con paginacion."""
         # Arrange --------------------------------------------------------
@@ -294,6 +311,7 @@ class TestListExtractsEndpoint:
 
         # Override para que get_current_user_id retorne nuestro user_id
         from src.api.dependencies import get_current_user_id
+
         app.dependency_overrides[get_current_user_id] = lambda: str(user_id)
 
         # Act ------------------------------------------------------------
@@ -314,12 +332,14 @@ class TestListExtractsEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnEmptyList_When_NoExtracts(
-        self, app: FastAPI,
+        self,
+        app: FastAPI,
     ) -> None:
         """Retorna lista vacia cuando el usuario no tiene extractos."""
         # Arrange --------------------------------------------------------
         test_user_id = str(uuid.uuid4())
         from src.api.dependencies import get_current_user_id
+
         app.dependency_overrides[get_current_user_id] = lambda: test_user_id
 
         # Act ------------------------------------------------------------
@@ -349,6 +369,7 @@ class TestListExtractsEndpoint:
             await session.commit()
 
         from src.api.dependencies import get_current_user_id
+
         app.dependency_overrides[get_current_user_id] = lambda: str(user_id)
 
         # Act ------------------------------------------------------------
@@ -372,7 +393,9 @@ class TestGetExtractEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnExtractDetail_When_ValidId(
-        self, app: FastAPI, session_factory,
+        self,
+        app: FastAPI,
+        session_factory,
     ) -> None:
         """Retorna el detalle completo de un extracto por ID."""
         # Arrange --------------------------------------------------------
@@ -423,7 +446,9 @@ class TestGetExtractStatusEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnStatus_When_ValidId(
-        self, app: FastAPI, session_factory,
+        self,
+        app: FastAPI,
+        session_factory,
     ) -> None:
         """Retorna el estado de procesamiento."""
         # Arrange --------------------------------------------------------
@@ -452,7 +477,9 @@ class TestGetExtractStatusEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnErrorMessage_When_ExtractInError(
-        self, app: FastAPI, session_factory,
+        self,
+        app: FastAPI,
+        session_factory,
     ) -> None:
         """Incluye mensaje de error cuando el extracto esta en estado ERROR."""
         # Arrange --------------------------------------------------------
@@ -503,7 +530,9 @@ class TestDeleteExtractEndpoint:
 
     @pytest.mark.asyncio
     async def test_Should_Return204_When_ExtractDeleted(
-        self, app: FastAPI, session_factory,
+        self,
+        app: FastAPI,
+        session_factory,
     ) -> None:
         """Elimina un extracto existente y retorna 204."""
         # Arrange --------------------------------------------------------
@@ -528,6 +557,7 @@ class TestDeleteExtractEndpoint:
         # Verificar que realmente se elimino
         async with session_factory() as session:
             from sqlalchemy import select
+
             stmt = select(ExtractoModel).where(ExtractoModel.id == extracto_id)
             result = await session.execute(stmt)
             deleted = result.scalar_one_or_none()

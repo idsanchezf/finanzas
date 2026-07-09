@@ -96,7 +96,9 @@ def transacciones_sin_clasificar(extracto_id, usuario_id):
     return [
         _make_txn_model(extracto_id, usuario_id, "DLO*DIDI FOOD CO PAYIN"),
         _make_txn_model(extracto_id, usuario_id, "UBER *TRIP HELP.UBER.COM", Decimal("18500.00")),
-        _make_txn_model(extracto_id, usuario_id, "ABCXYZ_MNOPQR_123456_NOMATCH", Decimal("50000.00")),
+        _make_txn_model(
+            extracto_id, usuario_id, "ABCXYZ_MNOPQR_123456_NOMATCH", Decimal("50000.00")
+        ),
     ]
 
 
@@ -195,8 +197,13 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_ClassifyTransactions_When_ValidMerchants(
-        self, sut, extracto_id, usuario_id,
-        transacciones_sin_clasificar, categoria_models, extracto_model,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
+        transacciones_sin_clasificar,
+        categoria_models,
+        extracto_model,
         mock_repos,
     ):
         """Happy path: clasifica correctamente usando el clasificador de reglas."""
@@ -246,8 +253,12 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_MarkLowConfidence_When_BelowThreshold(
-        self, sut, extracto_id, usuario_id,
-        categoria_models, extracto_model,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
+        categoria_models,
+        extracto_model,
         mock_repos,
     ):
         """Transacciones con confianza baja (<70%) se registran como tal."""
@@ -282,8 +293,12 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_NotClassify_When_NoMatch(
-        self, sut, extracto_id, usuario_id,
-        categoria_models, extracto_model,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
+        categoria_models,
+        extracto_model,
         mock_repos,
     ):
         """Comercios sin match no deben clasificarse (categoria_id=None)."""
@@ -313,8 +328,13 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_UpdateExtractoStatus_When_Processing(
-        self, sut, extracto_id, usuario_id,
-        transacciones_sin_clasificar, categoria_models, extracto_model,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
+        transacciones_sin_clasificar,
+        categoria_models,
+        extracto_model,
         mock_repos,
     ):
         """El extracto debe pasar a CLASSIFYING y luego a COMPLETED."""
@@ -336,10 +356,12 @@ class TestProcessExtract:
 
         async def _capture_save(extracto):
             # Guardar una copia del estado en este instante (evita mutacion posterior)
-            saved_extractos.append({
-                "estado": extracto.estado,
-                "progress_pct": extracto.progress_pct,
-            })
+            saved_extractos.append(
+                {
+                    "estado": extracto.estado,
+                    "progress_pct": extracto.progress_pct,
+                }
+            )
             return extracto
 
         mock_repos["extracto_save"].side_effect = _capture_save
@@ -356,8 +378,9 @@ class TestProcessExtract:
         assert len(saved_extractos) >= 2, f"Expected >=2 extracts saves, got {len(saved_extractos)}"
 
         # Primer save: estado CLASSIFYING
-        assert saved_extractos[0]["estado"] == "CLASSIFYING", \
+        assert saved_extractos[0]["estado"] == "CLASSIFYING", (
             f"First save should be CLASSIFYING, got {saved_extractos[0]}"
+        )
 
         # Ultimo save: estado COMPLETED
         assert saved_extractos[-1]["estado"] == "COMPLETED"
@@ -366,8 +389,12 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_HandleEmptyTransactionList_When_NoTransactions(
-        self, sut, extracto_id, usuario_id,
-        categoria_models, extracto_model,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
+        categoria_models,
+        extracto_model,
         mock_repos,
     ):
         """No debe fallar si la lista de transacciones esta vacia."""
@@ -390,7 +417,10 @@ class TestProcessExtract:
     # ------------------------------------------------------------------
     @pytest.mark.asyncio
     async def test_Should_ReturnEmpty_When_ExtractNotFound(
-        self, sut, extracto_id, usuario_id,
+        self,
+        sut,
+        extracto_id,
+        usuario_id,
         mock_repos,
     ):
         """Retorna lista vacia si el extracto no existe."""

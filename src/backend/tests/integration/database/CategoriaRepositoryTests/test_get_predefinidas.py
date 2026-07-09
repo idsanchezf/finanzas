@@ -15,7 +15,8 @@ class TestGetPredefinidas:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnOnlyPredefinidas_When_Called(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
         categoria_predefinida: CategoriaModel,
         categoria_personalizada: CategoriaModel,
     ):
@@ -24,6 +25,7 @@ class TestGetPredefinidas:
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -36,13 +38,15 @@ class TestGetPredefinidas:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnEmptyList_When_NoPredefinidas(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Retorna lista vacia cuando no hay predefinidas."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------

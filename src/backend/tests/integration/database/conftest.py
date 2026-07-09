@@ -18,6 +18,7 @@ async def categoria_repo(db_session: AsyncSession):
     from src.infrastructure.persistence.repositories.categoria_repo import (
         CategoriaRepository,
     )
+
     return CategoriaRepository(db_session)
 
 
@@ -27,6 +28,7 @@ async def transaccion_repo(db_session: AsyncSession):
     from src.infrastructure.persistence.repositories.transaccion_repo import (
         TransaccionRepository,
     )
+
     return TransaccionRepository(db_session)
 
 

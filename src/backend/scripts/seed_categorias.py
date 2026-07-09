@@ -65,23 +65,64 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "color": "#EF4444",
         "subcategorias": [
             ("Restaurantes", ["RESTAURANTE", "RESTAURANTES", "ALMUERZO", "CENA"]),
-            ("Comida rapida", [
-                "MCDONALDS", "BURGER KING", "KFC", "SUBWAY", "DOMINOS",
-                "PAPA JOHNS", "PIZZA HUT", "EL CORRAL", "PRESTO",
-            ]),
-            ("Supermercado", [
-                "CARULLA", "EXITO", "JUMBO", "D1", "ARA", "OLIMPICA",
-                "SUPERMERCADO", "MERCADO", "LA 14", "ALMACENES EXITO",
-            ]),
-            ("Delivery", [
-                "DIDI FOOD", "RAPPI", "UBER EATS", "IFOOD", "DOMICILIOS",
-                "PEDIDOS YA", "DLO*",
-            ]),
+            (
+                "Comida rapida",
+                [
+                    "MCDONALDS",
+                    "BURGER KING",
+                    "KFC",
+                    "SUBWAY",
+                    "DOMINOS",
+                    "PAPA JOHNS",
+                    "PIZZA HUT",
+                    "EL CORRAL",
+                    "PRESTO",
+                ],
+            ),
+            (
+                "Supermercado",
+                [
+                    "CARULLA",
+                    "EXITO",
+                    "JUMBO",
+                    "D1",
+                    "ARA",
+                    "OLIMPICA",
+                    "SUPERMERCADO",
+                    "MERCADO",
+                    "LA 14",
+                    "ALMACENES EXITO",
+                ],
+            ),
+            (
+                "Delivery",
+                [
+                    "DIDI FOOD",
+                    "RAPPI",
+                    "UBER EATS",
+                    "IFOOD",
+                    "DOMICILIOS",
+                    "PEDIDOS YA",
+                    "DLO*",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "DIDI FOOD", "RAPPI", "MCDONALDS", "DOMICILIOS", "CARULLA",
-            "EXITO", "JUMBO", "D1", "COMIDA", "RESTAURANTE", "ALMUERZO",
-            "CENA", "SUPERMERCADO", "MERCADO", "DELIVERY",
+            "DIDI FOOD",
+            "RAPPI",
+            "MCDONALDS",
+            "DOMICILIOS",
+            "CARULLA",
+            "EXITO",
+            "JUMBO",
+            "D1",
+            "COMIDA",
+            "RESTAURANTE",
+            "ALMUERZO",
+            "CENA",
+            "SUPERMERCADO",
+            "MERCADO",
+            "DELIVERY",
         ],
     },
     {
@@ -89,27 +130,72 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🚗",
         "color": "#F59E0B",
         "subcategorias": [
-            ("Gasolina", [
-                "TERPEL", "EXXON", "PRIMAX", "BIOMAX", "PETROBRAS",
-                "GASOLINA", "COMBUSTIBLE", "EDS", "ESTACION",
-            ]),
-            ("Taxi/Plataforma", [
-                "UBER", "DIDI", "CABIFY", "INDIRIVE", "BEAT",
-                "TAXI", "TRANSPORTE APP",
-            ]),
+            (
+                "Gasolina",
+                [
+                    "TERPEL",
+                    "EXXON",
+                    "PRIMAX",
+                    "BIOMAX",
+                    "PETROBRAS",
+                    "GASOLINA",
+                    "COMBUSTIBLE",
+                    "EDS",
+                    "ESTACION",
+                ],
+            ),
+            (
+                "Taxi/Plataforma",
+                [
+                    "UBER",
+                    "DIDI",
+                    "CABIFY",
+                    "INDIRIVE",
+                    "BEAT",
+                    "TAXI",
+                    "TRANSPORTE APP",
+                ],
+            ),
             ("Peajes", ["COLPAGOS", "PEAJE", "AUTOPISTA", "VIA"]),
-            ("Parqueadero", [
-                "PARQUEADERO", "PARKING", "ESTACIONAMIENTO", "PARQUEAR",
-            ]),
-            ("Transporte publico", [
-                "TRANSMILENIO", "TRANSMETRO", "MIO", "METRO",
-                "BUS", "SITP", "TRANSPORTE PUBLICO",
-            ]),
+            (
+                "Parqueadero",
+                [
+                    "PARQUEADERO",
+                    "PARKING",
+                    "ESTACIONAMIENTO",
+                    "PARQUEAR",
+                ],
+            ),
+            (
+                "Transporte publico",
+                [
+                    "TRANSMILENIO",
+                    "TRANSMETRO",
+                    "MIO",
+                    "METRO",
+                    "BUS",
+                    "SITP",
+                    "TRANSPORTE PUBLICO",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "UBER", "DIDI", "CABIFY", "INDIRIVE", "TERPEL", "EXXON",
-            "PRIMAX", "COLPAGOS", "PEAJE", "GASOLINA", "TAXI",
-            "PARQUEADERO", "TRANSMILENIO", "BUS", "METRO", "TRANSPORTE",
+            "UBER",
+            "DIDI",
+            "CABIFY",
+            "INDIRIVE",
+            "TERPEL",
+            "EXXON",
+            "PRIMAX",
+            "COLPAGOS",
+            "PEAJE",
+            "GASOLINA",
+            "TAXI",
+            "PARQUEADERO",
+            "TRANSMILENIO",
+            "BUS",
+            "METRO",
+            "TRANSPORTE",
         ],
     },
     {
@@ -118,28 +204,78 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "color": "#8B5CF6",
         "subcategorias": [
             ("Arriendo", ["ARRIENDO", "CANON", "RENTA", "ALQUILER", "ARRENDAMIENTO"]),
-            ("Servicios publicos", [
-                "ENEL", "EPM", "CODENSA", "ENERGIA", "LUZ",
-                "ACUEDUCTO", "AGUA", "ALCANTARILLADO", "ASEO",
-                "EMCALI", "EMPRESAS PUBLICAS", "SERVICIOS PUBLICOS",
-            ]),
-            ("Internet/TV", [
-                "CLARO", "TIGO", "MOVISTAR", "DIRECTV", "ETB",
-                "INTERNET", "TELEVISION", "FIBRA OPTICA", "TV CABLE",
-            ]),
-            ("Mantenimiento", [
-                "MANTENIMIENTO", "REPARACION", "REPARACIONES",
-                "PLOMERO", "ELECTRICISTA", "PINTOR", "OBRERO",
-            ]),
-            ("Decoracion", [
-                "HOME", "HOGAR", "DECORACION", "MUEBLES", "HOME CENTER",
-                "HOME SENTRY", "DECORAR", "ILUMINACION", "CASA BONITA",
-            ]),
+            (
+                "Servicios publicos",
+                [
+                    "ENEL",
+                    "EPM",
+                    "CODENSA",
+                    "ENERGIA",
+                    "LUZ",
+                    "ACUEDUCTO",
+                    "AGUA",
+                    "ALCANTARILLADO",
+                    "ASEO",
+                    "EMCALI",
+                    "EMPRESAS PUBLICAS",
+                    "SERVICIOS PUBLICOS",
+                ],
+            ),
+            (
+                "Internet/TV",
+                [
+                    "CLARO",
+                    "TIGO",
+                    "MOVISTAR",
+                    "DIRECTV",
+                    "ETB",
+                    "INTERNET",
+                    "TELEVISION",
+                    "FIBRA OPTICA",
+                    "TV CABLE",
+                ],
+            ),
+            (
+                "Mantenimiento",
+                [
+                    "MANTENIMIENTO",
+                    "REPARACION",
+                    "REPARACIONES",
+                    "PLOMERO",
+                    "ELECTRICISTA",
+                    "PINTOR",
+                    "OBRERO",
+                ],
+            ),
+            (
+                "Decoracion",
+                [
+                    "HOME",
+                    "HOGAR",
+                    "DECORACION",
+                    "MUEBLES",
+                    "HOME CENTER",
+                    "HOME SENTRY",
+                    "DECORAR",
+                    "ILUMINACION",
+                    "CASA BONITA",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "ENEL", "EPM", "CLARO", "TIGO", "MOVISTAR", "HOME", "HOGAR",
-            "ARRIENDO", "SERVICIOS PUBLICOS", "MANTENIMIENTO",
-            "DECORACION", "MUEBLES", "HOME CENTER",
+            "ENEL",
+            "EPM",
+            "CLARO",
+            "TIGO",
+            "MOVISTAR",
+            "HOME",
+            "HOGAR",
+            "ARRIENDO",
+            "SERVICIOS PUBLICOS",
+            "MANTENIMIENTO",
+            "DECORACION",
+            "MUEBLES",
+            "HOME CENTER",
         ],
     },
     {
@@ -147,34 +283,95 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🛍️",
         "color": "#EC4899",
         "subcategorias": [
-            ("Ropa", [
-                "FALABELLA", "ZARA", "ADIDAS", "NIKE", "BOSI",
-                "ARTURO CALLE", "KOOS", "STUDIO F", "ELA",
-                "TENNIS", "PULL&BEAR", "BERSHKA", "H&M", "AMERICANINO",
-            ]),
-            ("Tecnologia", [
-                "ALKOSTO", "AMAZON", "MERCADOLIBRE", "APPLE",
-                "SAMSUNG", "XIAOMI", "HUAWEI", "LG", "ALCOSTO",
-            ]),
-            ("Mascotas", [
-                "VETERINARIA", "VETERINARIO", "MASCOTA", "PERRO",
-                "GATO", "CONCENTRADO", "PET SHOP", "AGROGUAU",
-                "LAIKA", "PETCO", "ALIMENTO MASCOTA",
-            ]),
-            ("Libros", [
-                "LIBRO", "LIBRERIA", "PANAMERICANA", "LERNER",
-                "BUSCALIBRE", "BOOK", "LIBROS",
-            ]),
-            ("Farmacia", [
-                "CRUZ VERDE", "FARMACIA", "DROGUERIA", "MEDICINA",
-                "MEDICAMENTO", "DROGA", "FARMACODO", "PASTEUR",
-                "DROGAS LA REBAJA", "LOCATEL",
-            ]),
+            (
+                "Ropa",
+                [
+                    "FALABELLA",
+                    "ZARA",
+                    "ADIDAS",
+                    "NIKE",
+                    "BOSI",
+                    "ARTURO CALLE",
+                    "KOOS",
+                    "STUDIO F",
+                    "ELA",
+                    "TENNIS",
+                    "PULL&BEAR",
+                    "BERSHKA",
+                    "H&M",
+                    "AMERICANINO",
+                ],
+            ),
+            (
+                "Tecnologia",
+                [
+                    "ALKOSTO",
+                    "AMAZON",
+                    "MERCADOLIBRE",
+                    "APPLE",
+                    "SAMSUNG",
+                    "XIAOMI",
+                    "HUAWEI",
+                    "LG",
+                    "ALCOSTO",
+                ],
+            ),
+            (
+                "Mascotas",
+                [
+                    "VETERINARIA",
+                    "VETERINARIO",
+                    "MASCOTA",
+                    "PERRO",
+                    "GATO",
+                    "CONCENTRADO",
+                    "PET SHOP",
+                    "AGROGUAU",
+                    "LAIKA",
+                    "PETCO",
+                    "ALIMENTO MASCOTA",
+                ],
+            ),
+            (
+                "Libros",
+                [
+                    "LIBRO",
+                    "LIBRERIA",
+                    "PANAMERICANA",
+                    "LERNER",
+                    "BUSCALIBRE",
+                    "BOOK",
+                    "LIBROS",
+                ],
+            ),
+            (
+                "Farmacia",
+                [
+                    "CRUZ VERDE",
+                    "FARMACIA",
+                    "DROGUERIA",
+                    "MEDICINA",
+                    "MEDICAMENTO",
+                    "DROGA",
+                    "FARMACODO",
+                    "PASTEUR",
+                    "DROGAS LA REBAJA",
+                    "LOCATEL",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "FALABELLA", "ALKOSTO", "AMAZON", "MERCADOLIBRE",
-            "CRUZ VERDE", "FARMACIA", "VETERINARIA", "COMPRA",
-            "TIENDA", "ONLINE", "RETAIL",
+            "FALABELLA",
+            "ALKOSTO",
+            "AMAZON",
+            "MERCADOLIBRE",
+            "CRUZ VERDE",
+            "FARMACIA",
+            "VETERINARIA",
+            "COMPRA",
+            "TIENDA",
+            "ONLINE",
+            "RETAIL",
         ],
     },
     {
@@ -182,27 +379,73 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🎮",
         "color": "#06B6D4",
         "subcategorias": [
-            ("Cine/Teatro", [
-                "CINEMA", "CINECOLOMBIA", "CINEPLANET", "CINEMARK",
-                "CINE", "TEATRO", "PELICULA", "ROYAL FILMS",
-            ]),
-            ("Streaming", [
-                "NETFLIX", "SPOTIFY", "DISNEY", "HBO", "PRIME VIDEO",
-                "YOUTUBE PREMIUM", "APPLE TV", "PARAMOUNT", "STAR+",
-            ]),
-            ("Juegos", [
-                "STEAM", "PLAYSTATION", "PLAY STATION", "XBOX",
-                "NINTENDO", "EPIC GAMES", "VIDEOJUEGO", "JUEGO",
-            ]),
-            ("Eventos", [
-                "EVENTO", "CONCIERTO", "FESTIVAL", "ESTEREO PICNIC",
-                "JAMMING", "TICKET", "BOLETERIA", "TUBOLETA",
-            ]),
+            (
+                "Cine/Teatro",
+                [
+                    "CINEMA",
+                    "CINECOLOMBIA",
+                    "CINEPLANET",
+                    "CINEMARK",
+                    "CINE",
+                    "TEATRO",
+                    "PELICULA",
+                    "ROYAL FILMS",
+                ],
+            ),
+            (
+                "Streaming",
+                [
+                    "NETFLIX",
+                    "SPOTIFY",
+                    "DISNEY",
+                    "HBO",
+                    "PRIME VIDEO",
+                    "YOUTUBE PREMIUM",
+                    "APPLE TV",
+                    "PARAMOUNT",
+                    "STAR+",
+                ],
+            ),
+            (
+                "Juegos",
+                [
+                    "STEAM",
+                    "PLAYSTATION",
+                    "PLAY STATION",
+                    "XBOX",
+                    "NINTENDO",
+                    "EPIC GAMES",
+                    "VIDEOJUEGO",
+                    "JUEGO",
+                ],
+            ),
+            (
+                "Eventos",
+                [
+                    "EVENTO",
+                    "CONCIERTO",
+                    "FESTIVAL",
+                    "ESTEREO PICNIC",
+                    "JAMMING",
+                    "TICKET",
+                    "BOLETERIA",
+                    "TUBOLETA",
+                ],
+            ),
             ("Musica", ["MUSICA", "MUSICAL", "INSTRUMENTO", "GUITARRA", "CONCIERTO"]),
         ],
         "palabras_clave": [
-            "CINEMA", "CINECOLOMBIA", "NETFLIX", "SPOTIFY", "DISNEY",
-            "HBO", "STEAM", "PLAYSTATION", "CINE", "TEATRO", "CONCIERTO",
+            "CINEMA",
+            "CINECOLOMBIA",
+            "NETFLIX",
+            "SPOTIFY",
+            "DISNEY",
+            "HBO",
+            "STEAM",
+            "PLAYSTATION",
+            "CINE",
+            "TEATRO",
+            "CONCIERTO",
         ],
     },
     {
@@ -210,28 +453,74 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "✈️",
         "color": "#3B82F6",
         "subcategorias": [
-            ("Vuelos", [
-                "AVIANCA", "LATAM", "WINGO", "VIVA AIR", "VUELO",
-                "TICKETE", "PASAJE", "AEROLINEA", "AVION",
-                "JETSMART", "COPA AIRLINES", "EASYFLY",
-            ]),
-            ("Hoteles", [
-                "HOTEL", "HOTELES", "ALOJAMIENTO", "HOSPEDAJE",
-                "ESTADIA", "RESORT", "APARTA HOTEL",
-            ]),
-            ("Turismo", [
-                "DESPEGAR", "BOOKING", "AIRBNB", "EXPEDIA",
-                "KAYAK", "TRIPADVISOR", "TURISMO", "TOUR",
-                "EXCURSION", "VIAJE",
-            ]),
-            ("Alquiler auto", [
-                "RENT A CAR", "ALQUILER AUTO", "ALQUILER CARRO",
-                "LOCALIZA", "HERTZ", "AVIS", "RENTAR AUTO",
-            ]),
+            (
+                "Vuelos",
+                [
+                    "AVIANCA",
+                    "LATAM",
+                    "WINGO",
+                    "VIVA AIR",
+                    "VUELO",
+                    "TICKETE",
+                    "PASAJE",
+                    "AEROLINEA",
+                    "AVION",
+                    "JETSMART",
+                    "COPA AIRLINES",
+                    "EASYFLY",
+                ],
+            ),
+            (
+                "Hoteles",
+                [
+                    "HOTEL",
+                    "HOTELES",
+                    "ALOJAMIENTO",
+                    "HOSPEDAJE",
+                    "ESTADIA",
+                    "RESORT",
+                    "APARTA HOTEL",
+                ],
+            ),
+            (
+                "Turismo",
+                [
+                    "DESPEGAR",
+                    "BOOKING",
+                    "AIRBNB",
+                    "EXPEDIA",
+                    "KAYAK",
+                    "TRIPADVISOR",
+                    "TURISMO",
+                    "TOUR",
+                    "EXCURSION",
+                    "VIAJE",
+                ],
+            ),
+            (
+                "Alquiler auto",
+                [
+                    "RENT A CAR",
+                    "ALQUILER AUTO",
+                    "ALQUILER CARRO",
+                    "LOCALIZA",
+                    "HERTZ",
+                    "AVIS",
+                    "RENTAR AUTO",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "AVIANCA", "LATAM", "WINGO", "DESPEGAR", "BOOKING",
-            "AIRBNB", "VUELO", "HOTEL", "VIAJE", "TURISMO",
+            "AVIANCA",
+            "LATAM",
+            "WINGO",
+            "DESPEGAR",
+            "BOOKING",
+            "AIRBNB",
+            "VUELO",
+            "HOTEL",
+            "VIAJE",
+            "TURISMO",
         ],
     },
     {
@@ -239,27 +528,72 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "💪",
         "color": "#10B981",
         "subcategorias": [
-            ("Gimnasio", [
-                "GYM", "SMARTFIT", "BODYTECH", "GIMNASIO",
-                "FITNESS", "CROSSFIT", "SPINNING", "ATHLETIC",
-            ]),
-            ("Medico", [
-                "EPS", "SURA", "SANITAS", "COMPENSAR", "NUEVA EPS",
-                "MEDICO", "HOSPITAL", "CLINICA", "CONSULTA",
-                "LABORATORIO", "EXAMEN", "CIRUGIA",
-            ]),
-            ("Dental", [
-                "ODONTO", "DENTAL", "ORTODONCIA", "ODONTOLOGIA",
-                "ODONTOLOGO", "BRACKETS", "DISENO SONRISA",
-            ]),
-            ("Seguro salud", [
-                "SEGURO", "POLIZA SALUD", "MEDICINA PREPAGADA",
-                "COLSANITAS", "SEGURO DE SALUD", "PLAN COMPLEMENTARIO",
-            ]),
+            (
+                "Gimnasio",
+                [
+                    "GYM",
+                    "SMARTFIT",
+                    "BODYTECH",
+                    "GIMNASIO",
+                    "FITNESS",
+                    "CROSSFIT",
+                    "SPINNING",
+                    "ATHLETIC",
+                ],
+            ),
+            (
+                "Medico",
+                [
+                    "EPS",
+                    "SURA",
+                    "SANITAS",
+                    "COMPENSAR",
+                    "NUEVA EPS",
+                    "MEDICO",
+                    "HOSPITAL",
+                    "CLINICA",
+                    "CONSULTA",
+                    "LABORATORIO",
+                    "EXAMEN",
+                    "CIRUGIA",
+                ],
+            ),
+            (
+                "Dental",
+                [
+                    "ODONTO",
+                    "DENTAL",
+                    "ORTODONCIA",
+                    "ODONTOLOGIA",
+                    "ODONTOLOGO",
+                    "BRACKETS",
+                    "DISENO SONRISA",
+                ],
+            ),
+            (
+                "Seguro salud",
+                [
+                    "SEGURO",
+                    "POLIZA SALUD",
+                    "MEDICINA PREPAGADA",
+                    "COLSANITAS",
+                    "SEGURO DE SALUD",
+                    "PLAN COMPLEMENTARIO",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "GYM", "SMARTFIT", "BODYTECH", "EPS", "SURA", "ODONTO",
-            "MEDICO", "HOSPITAL", "CLINICA", "SALUD", "DENTAL",
+            "GYM",
+            "SMARTFIT",
+            "BODYTECH",
+            "EPS",
+            "SURA",
+            "ODONTO",
+            "MEDICO",
+            "HOSPITAL",
+            "CLINICA",
+            "SALUD",
+            "DENTAL",
         ],
     },
     {
@@ -267,29 +601,73 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🎓",
         "color": "#6366F1",
         "subcategorias": [
-            ("Universidad", [
-                "UDEA", "UNIVERSIDAD", "MATRICULA", "PENSION",
-                "SEMESTRE", "POSTGRADO", "MAESTRIA", "DOCTORADO",
-                "UNIANDES", "JAVERIANA", "ICESI", "EAFIT",
-                "UNINORTE", "SERGIO ARBOLEDA", "TADEO",
-            ]),
-            ("Cursos", [
-                "PLATZI", "UDEMY", "CURSERA", "DOMESTIKA",
-                "CREHANA", "COURSERA", "CURSO", "CERTIFICACION",
-                "TALLER", "WORKSHOP", "CAPACITACION",
-            ]),
-            ("Libros", [
-                "LIBRO", "LIBROS", "EDUCACION", "TEXTO",
-                "PANAMERICANA", "BOOKS",
-            ]),
-            ("Suscripciones", [
-                "SUSCRIPCION EDUCATIVA", "MEMBRESIA", "LICENCIA",
-                "MATRICULA ONLINE",
-            ]),
+            (
+                "Universidad",
+                [
+                    "UDEA",
+                    "UNIVERSIDAD",
+                    "MATRICULA",
+                    "PENSION",
+                    "SEMESTRE",
+                    "POSTGRADO",
+                    "MAESTRIA",
+                    "DOCTORADO",
+                    "UNIANDES",
+                    "JAVERIANA",
+                    "ICESI",
+                    "EAFIT",
+                    "UNINORTE",
+                    "SERGIO ARBOLEDA",
+                    "TADEO",
+                ],
+            ),
+            (
+                "Cursos",
+                [
+                    "PLATZI",
+                    "UDEMY",
+                    "CURSERA",
+                    "DOMESTIKA",
+                    "CREHANA",
+                    "COURSERA",
+                    "CURSO",
+                    "CERTIFICACION",
+                    "TALLER",
+                    "WORKSHOP",
+                    "CAPACITACION",
+                ],
+            ),
+            (
+                "Libros",
+                [
+                    "LIBRO",
+                    "LIBROS",
+                    "EDUCACION",
+                    "TEXTO",
+                    "PANAMERICANA",
+                    "BOOKS",
+                ],
+            ),
+            (
+                "Suscripciones",
+                [
+                    "SUSCRIPCION EDUCATIVA",
+                    "MEMBRESIA",
+                    "LICENCIA",
+                    "MATRICULA ONLINE",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "UDEA", "UNIVERSIDAD", "PLATZI", "UDEMY", "CURSERA",
-            "CURSO", "MATRICULA", "EDUCACION", "CERTIFICACION",
+            "UDEA",
+            "UNIVERSIDAD",
+            "PLATZI",
+            "UDEMY",
+            "CURSERA",
+            "CURSO",
+            "MATRICULA",
+            "EDUCACION",
+            "CERTIFICACION",
         ],
     },
     {
@@ -297,27 +675,65 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "💰",
         "color": "#22C55E",
         "subcategorias": [
-            ("Salario", [
-                "ABONO", "SALARIO", "NOMINA", "PAGO NOMINA",
-                "PAGO SALARIAL", "HONORARIOS", "SUELDO",
-            ]),
-            ("Freelance", [
-                "FREELANCE", "CONSULTORIA", "PROYECTO", "ASESORIA",
-                "INDEPENDIENTE", "CONTRATO PRESTACION SERVICIOS",
-                "UPWORK", "FIVERR", "WORKANA",
-            ]),
-            ("Reembolso", [
-                "REEMBOLSO", "DEVOLUCION", "REINTEGRO",
-                "CASHBACK", "REVERSA", "NOTA CREDITO",
-            ]),
-            ("Transferencia", [
-                "TRANSFERENCIA", "CONSIGNACION", "DEPOSITO",
-                "PAGO RECIBIDO", "GIRO", "PSE RECIBIDO",
-            ]),
+            (
+                "Salario",
+                [
+                    "ABONO",
+                    "SALARIO",
+                    "NOMINA",
+                    "PAGO NOMINA",
+                    "PAGO SALARIAL",
+                    "HONORARIOS",
+                    "SUELDO",
+                ],
+            ),
+            (
+                "Freelance",
+                [
+                    "FREELANCE",
+                    "CONSULTORIA",
+                    "PROYECTO",
+                    "ASESORIA",
+                    "INDEPENDIENTE",
+                    "CONTRATO PRESTACION SERVICIOS",
+                    "UPWORK",
+                    "FIVERR",
+                    "WORKANA",
+                ],
+            ),
+            (
+                "Reembolso",
+                [
+                    "REEMBOLSO",
+                    "DEVOLUCION",
+                    "REINTEGRO",
+                    "CASHBACK",
+                    "REVERSA",
+                    "NOTA CREDITO",
+                ],
+            ),
+            (
+                "Transferencia",
+                [
+                    "TRANSFERENCIA",
+                    "CONSIGNACION",
+                    "DEPOSITO",
+                    "PAGO RECIBIDO",
+                    "GIRO",
+                    "PSE RECIBIDO",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "ABONO", "PAGO", "SALARIO", "TRANSFERENCIA", "REEMBOLSO",
-            "NOMINA", "DEVOLUCION", "CONSIGNACION", "DEPOSITO",
+            "ABONO",
+            "PAGO",
+            "SALARIO",
+            "TRANSFERENCIA",
+            "REEMBOLSO",
+            "NOMINA",
+            "DEVOLUCION",
+            "CONSIGNACION",
+            "DEPOSITO",
         ],
     },
     {
@@ -325,26 +741,57 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "💳",
         "color": "#64748B",
         "subcategorias": [
-            ("Comisiones", [
-                "COMISION", "COMISION BANCARIA", "COMISIONES",
-                "CARGO BANCARIO", "COSTO TRANSFERENCIA",
-            ]),
-            ("Intereses", [
-                "INTERES", "INTERESES", "TASA", "INTERES CORRIENTE",
-                "INTERES MORA",
-            ]),
-            ("Seguros", [
-                "SEGURO", "SEGURO DE VIDA", "SEGURO TARJETA",
-                "POLIZA", "ASISTENCIA", "PROTECCION TARJETA",
-            ]),
-            ("Cuota manejo", [
-                "CUOTA MANEJO", "CUOTA DE MANEJO", "MANEJO TARJETA",
-                "CARGO FIJO", "ADMINISTRACION TARJETA",
-            ]),
+            (
+                "Comisiones",
+                [
+                    "COMISION",
+                    "COMISION BANCARIA",
+                    "COMISIONES",
+                    "CARGO BANCARIO",
+                    "COSTO TRANSFERENCIA",
+                ],
+            ),
+            (
+                "Intereses",
+                [
+                    "INTERES",
+                    "INTERESES",
+                    "TASA",
+                    "INTERES CORRIENTE",
+                    "INTERES MORA",
+                ],
+            ),
+            (
+                "Seguros",
+                [
+                    "SEGURO",
+                    "SEGURO DE VIDA",
+                    "SEGURO TARJETA",
+                    "POLIZA",
+                    "ASISTENCIA",
+                    "PROTECCION TARJETA",
+                ],
+            ),
+            (
+                "Cuota manejo",
+                [
+                    "CUOTA MANEJO",
+                    "CUOTA DE MANEJO",
+                    "MANEJO TARJETA",
+                    "CARGO FIJO",
+                    "ADMINISTRACION TARJETA",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "COMISION", "INTERES", "SEGURO", "CUOTA MANEJO",
-            "BANCARIO", "TARJETA", "CARGO FIJO", "FINANCIERO",
+            "COMISION",
+            "INTERES",
+            "SEGURO",
+            "CUOTA MANEJO",
+            "BANCARIO",
+            "TARJETA",
+            "CARGO FIJO",
+            "FINANCIERO",
         ],
     },
     {
@@ -352,25 +799,71 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "👕",
         "color": "#D946EF",
         "subcategorias": [
-            ("Ropa", [
-                "ZARA", "ARTURO CALLE", "STUDIO F", "ELA",
-                "TENNIS", "PULL&BEAR", "BERSHKA", "H&M",
-                "AMERICANINO", "FALABELLA", "ROPABELLA",
-            ]),
-            ("Calzado", [
-                "ADIDAS", "NIKE", "BOSI", "KOOS", "ZAPATO",
-                "TENIS", "CALZADO", "ZAPATERIA", "CROYDON",
-                "REEBOK", "PUMA", "NEW BALANCE", "UNDER ARMOUR",
-            ]),
-            ("Accesorios", [
-                "ACCESORIO", "ACCESORIOS", "JOYERIA", "RELOJ",
-                "LENTES", "GAFAS", "BOLSOS", "CARTERA", "MOCHILA",
-                "TOTTO", "GEF", "PIEL",
-            ]),
+            (
+                "Ropa",
+                [
+                    "ZARA",
+                    "ARTURO CALLE",
+                    "STUDIO F",
+                    "ELA",
+                    "TENNIS",
+                    "PULL&BEAR",
+                    "BERSHKA",
+                    "H&M",
+                    "AMERICANINO",
+                    "FALABELLA",
+                    "ROPABELLA",
+                ],
+            ),
+            (
+                "Calzado",
+                [
+                    "ADIDAS",
+                    "NIKE",
+                    "BOSI",
+                    "KOOS",
+                    "ZAPATO",
+                    "TENIS",
+                    "CALZADO",
+                    "ZAPATERIA",
+                    "CROYDON",
+                    "REEBOK",
+                    "PUMA",
+                    "NEW BALANCE",
+                    "UNDER ARMOUR",
+                ],
+            ),
+            (
+                "Accesorios",
+                [
+                    "ACCESORIO",
+                    "ACCESORIOS",
+                    "JOYERIA",
+                    "RELOJ",
+                    "LENTES",
+                    "GAFAS",
+                    "BOLSOS",
+                    "CARTERA",
+                    "MOCHILA",
+                    "TOTTO",
+                    "GEF",
+                    "PIEL",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "ZARA", "ADIDAS", "NIKE", "BOSI", "ARTURO CALLE", "KOOS",
-            "ROPA", "CALZADO", "ZAPATO", "TENIS", "MODA", "ACCESORIOS",
+            "ZARA",
+            "ADIDAS",
+            "NIKE",
+            "BOSI",
+            "ARTURO CALLE",
+            "KOOS",
+            "ROPA",
+            "CALZADO",
+            "ZAPATO",
+            "TENIS",
+            "MODA",
+            "ACCESORIOS",
         ],
     },
     {
@@ -378,18 +871,41 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🎁",
         "color": "#F97316",
         "subcategorias": [
-            ("Regalos", [
-                "REGALO", "REGALOS", "OBSEQUIO", "DETALLE",
-                "CUMPLEANOS", "NAVIDAD", "AMIGO SECRETO", "FLORES",
-            ]),
-            ("Donaciones", [
-                "DONACION", "DONACIONES", "CARIDAD", "BENEFICENCIA",
-                "FUNDACION", "ONG", "CROWDFUNDING", "GOFUNDME",
-            ]),
+            (
+                "Regalos",
+                [
+                    "REGALO",
+                    "REGALOS",
+                    "OBSEQUIO",
+                    "DETALLE",
+                    "CUMPLEANOS",
+                    "NAVIDAD",
+                    "AMIGO SECRETO",
+                    "FLORES",
+                ],
+            ),
+            (
+                "Donaciones",
+                [
+                    "DONACION",
+                    "DONACIONES",
+                    "CARIDAD",
+                    "BENEFICENCIA",
+                    "FUNDACION",
+                    "ONG",
+                    "CROWDFUNDING",
+                    "GOFUNDME",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "REGALO", "DONACION", "DONACIONES", "OBSEQUIO", "FLORES",
-            "FUNDACION", "BENEFICENCIA",
+            "REGALO",
+            "DONACION",
+            "DONACIONES",
+            "OBSEQUIO",
+            "FLORES",
+            "FUNDACION",
+            "BENEFICENCIA",
         ],
     },
     {
@@ -397,23 +913,56 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "📱",
         "color": "#0EA5E9",
         "subcategorias": [
-            ("Celular", [
-                "CLARO", "MOVISTAR", "TIGO", "WOM", "VIRGIN",
-                "CELULAR", "TELEFONO", "LINEA", "PLAN MOVIL",
-            ]),
-            ("Internet", [
-                "INTERNET", "FIBRA", "BANDA ANCHA", "WIFI",
-                "ETB", "MOVISTAR FIBRA",
-            ]),
-            ("Plan datos", [
-                "PLAN DATOS", "RECARGA", "PAQUETE DATOS",
-                "PLAN CELULAR", "PLAN MOVIL", "RECARGA MOVIL",
-            ]),
+            (
+                "Celular",
+                [
+                    "CLARO",
+                    "MOVISTAR",
+                    "TIGO",
+                    "WOM",
+                    "VIRGIN",
+                    "CELULAR",
+                    "TELEFONO",
+                    "LINEA",
+                    "PLAN MOVIL",
+                ],
+            ),
+            (
+                "Internet",
+                [
+                    "INTERNET",
+                    "FIBRA",
+                    "BANDA ANCHA",
+                    "WIFI",
+                    "ETB",
+                    "MOVISTAR FIBRA",
+                ],
+            ),
+            (
+                "Plan datos",
+                [
+                    "PLAN DATOS",
+                    "RECARGA",
+                    "PAQUETE DATOS",
+                    "PLAN CELULAR",
+                    "PLAN MOVIL",
+                    "RECARGA MOVIL",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "CLARO", "MOVISTAR", "TIGO", "WOM", "VIRGIN",
-            "CELULAR", "INTERNET", "PLAN", "RECARGA", "TELEFONO",
-            "FIBRA", "LINEA",
+            "CLARO",
+            "MOVISTAR",
+            "TIGO",
+            "WOM",
+            "VIRGIN",
+            "CELULAR",
+            "INTERNET",
+            "PLAN",
+            "RECARGA",
+            "TELEFONO",
+            "FIBRA",
+            "LINEA",
         ],
     },
     {
@@ -421,18 +970,38 @@ CATEGORIAS_PREDEFINIDAS: list[dict[str, Any]] = [
         "icono": "🔧",
         "color": "#9CA3AF",
         "subcategorias": [
-            ("Miscelaneos", [
-                "OTROS", "VARIOS", "MISCELANEOS", "GENERAL",
-                "NO CLASIFICADO", "PAGO VARIOS",
-            ]),
-            ("No clasificado", [
-                "SIN CLASIFICAR", "DESCONOCIDO", "NO IDENTIFICADO",
-                "COMPRA", "PAGO", "DEBITO AUTOMATICO",
-            ]),
+            (
+                "Miscelaneos",
+                [
+                    "OTROS",
+                    "VARIOS",
+                    "MISCELANEOS",
+                    "GENERAL",
+                    "NO CLASIFICADO",
+                    "PAGO VARIOS",
+                ],
+            ),
+            (
+                "No clasificado",
+                [
+                    "SIN CLASIFICAR",
+                    "DESCONOCIDO",
+                    "NO IDENTIFICADO",
+                    "COMPRA",
+                    "PAGO",
+                    "DEBITO AUTOMATICO",
+                ],
+            ),
         ],
         "palabras_clave": [
-            "OTROS", "VARIOS", "MISCELANEOS", "NO CLASIFICADO",
-            "DESCONOCIDO", "COMPRA", "PAGO", "GENERAL",
+            "OTROS",
+            "VARIOS",
+            "MISCELANEOS",
+            "NO CLASIFICADO",
+            "DESCONOCIDO",
+            "COMPRA",
+            "PAGO",
+            "GENERAL",
         ],
     },
 ]
@@ -453,11 +1022,13 @@ async def ensure_tables(session_factory) -> None:
 
     async with engine.begin() as conn:
         from sqlalchemy import inspect
+
         # Usar run_sync para verificar existencia de tablas
         def _check_tables(sync_conn):
             insp = inspect(sync_conn)
             tables = insp.get_table_names()
             return tables
+
         existing_tables = await conn.run_sync(_check_tables)
 
         if "categorias" not in existing_tables:
@@ -507,9 +1078,7 @@ async def seed_categorias(
 
         # Si rebuild, eliminar las existentes
         if existing and rebuild:
-            stmt_delete = delete(CategoriaModel).where(
-                CategoriaModel.es_predefinida == True
-            )
+            stmt_delete = delete(CategoriaModel).where(CategoriaModel.es_predefinida == True)
             # Eliminar subcategorias primero (por FK self-referencial)
             stmt_delete_subs = delete(CategoriaModel).where(
                 CategoriaModel.es_predefinida == True,
@@ -594,13 +1163,9 @@ def _get_session_factory():
     # Si es sqlite+aiosqlite://, usarla tal cual.
     # Si es postgresql:// sin driver async, convertir a asyncpg.
     if database_url.startswith("postgresql://"):
-        database_url = database_url.replace(
-            "postgresql://", "postgresql+asyncpg://", 1
-        )
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif database_url.startswith("postgres://"):
-        database_url = database_url.replace(
-            "postgres://", "postgresql+asyncpg://", 1
-        )
+        database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
     echo = os.getenv("SQL_ECHO", "false").lower() == "true"
 

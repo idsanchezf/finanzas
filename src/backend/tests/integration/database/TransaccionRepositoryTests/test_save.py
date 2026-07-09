@@ -19,13 +19,15 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_PersistNewTransaccion_When_ValidModel(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Crea y persiste una nueva transaccion."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         model = TransaccionModel(
             id=uuid.uuid4(),
@@ -61,13 +63,16 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_UpdateExistingTransaccion_When_Merged(
-        self, db_session: AsyncSession, transaccion_prueba: TransaccionModel,
+        self,
+        db_session: AsyncSession,
+        transaccion_prueba: TransaccionModel,
     ):
         """Actualiza una transaccion existente via merge."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         transaccion_prueba.comercio_traducido = "Nombre Modificado"
 
@@ -83,13 +88,15 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_PersistInstallmentData_When_CuotasProvided(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Persiste correctamente datos de cuotas."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         model = TransaccionModel(
             id=uuid.uuid4(),
@@ -120,13 +127,15 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_PersistNegativeValueAsAbono_When_Negative(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Persiste valores negativos como abonos."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         model = TransaccionModel(
             id=uuid.uuid4(),

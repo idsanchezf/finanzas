@@ -18,24 +18,32 @@ class TestGetByExtracto:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnTransacciones_When_ExtractoExists(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Retorna todas las transacciones de un extracto."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         extracto_id = uuid.uuid4()
         usuario_id = uuid.uuid4()
 
         t1 = TransaccionModel(
-            id=uuid.uuid4(), extracto_id=extracto_id, usuario_id=usuario_id,
-            comercio_original="A", valor=Decimal("10"),
+            id=uuid.uuid4(),
+            extracto_id=extracto_id,
+            usuario_id=usuario_id,
+            comercio_original="A",
+            valor=Decimal("10"),
         )
         t2 = TransaccionModel(
-            id=uuid.uuid4(), extracto_id=extracto_id, usuario_id=usuario_id,
-            comercio_original="B", valor=Decimal("20"),
+            id=uuid.uuid4(),
+            extracto_id=extracto_id,
+            usuario_id=usuario_id,
+            comercio_original="B",
+            valor=Decimal("20"),
         )
         db_session.add_all([t1, t2])
         await db_session.flush()
@@ -51,13 +59,15 @@ class TestGetByExtracto:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnEmpty_When_NoTransacciones(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Retorna lista vacia para extracto sin transacciones."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -68,13 +78,15 @@ class TestGetByExtracto:
 
     @pytest.mark.asyncio
     async def test_Should_FilterByCategoria_When_FilterProvided(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Filtra transacciones por categoria_id."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         extracto_id = uuid.uuid4()
         usuario_id = uuid.uuid4()
@@ -82,12 +94,20 @@ class TestGetByExtracto:
         cat_b = uuid.uuid4()
 
         t1 = TransaccionModel(
-            id=uuid.uuid4(), extracto_id=extracto_id, usuario_id=usuario_id,
-            comercio_original="A", valor=Decimal("10"), categoria_id=cat_a,
+            id=uuid.uuid4(),
+            extracto_id=extracto_id,
+            usuario_id=usuario_id,
+            comercio_original="A",
+            valor=Decimal("10"),
+            categoria_id=cat_a,
         )
         t2 = TransaccionModel(
-            id=uuid.uuid4(), extracto_id=extracto_id, usuario_id=usuario_id,
-            comercio_original="B", valor=Decimal("20"), categoria_id=cat_b,
+            id=uuid.uuid4(),
+            extracto_id=extracto_id,
+            usuario_id=usuario_id,
+            comercio_original="B",
+            valor=Decimal("20"),
+            categoria_id=cat_b,
         )
         db_session.add_all([t1, t2])
         await db_session.flush()

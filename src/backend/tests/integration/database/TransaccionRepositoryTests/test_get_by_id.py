@@ -15,13 +15,16 @@ class TestGetById:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnTransaccion_When_ValidId(
-        self, db_session: AsyncSession, transaccion_prueba,
+        self,
+        db_session: AsyncSession,
+        transaccion_prueba,
     ):
         """Retorna una transaccion existente por su ID."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -34,13 +37,15 @@ class TestGetById:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnNone_When_IdNotFound(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Retorna None cuando el ID no existe."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
 
         # Act ------------------------------------------------------------

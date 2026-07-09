@@ -88,8 +88,7 @@ class TestParseMetadata:
         # Assert ----------------------------------------------------------
         for fname, result in results:
             assert result.exitoso, (
-                f"{fname}: Errores={result.errores}, "
-                f"Transacciones={len(result.transacciones)}"
+                f"{fname}: Errores={result.errores}, Transacciones={len(result.transacciones)}"
             )
 
 
@@ -157,6 +156,7 @@ class TestParseTransactions:
         # Assert ----------------------------------------------------------
         assert len(tx_with_date) > 0, "Al menos una transaccion debe tener fecha"
         from datetime import date
+
         assert isinstance(tx_with_date[0]["fecha"], date)
 
     # ------------------------------------------------------------------
@@ -166,7 +166,8 @@ class TestParseTransactions:
 
         # Act ------------------------------------------------------------
         cuotas_tx = [
-            t for t in abril_result.transacciones
+            t
+            for t in abril_result.transacciones
             if t.get("cuotas_totales") is not None and t["cuotas_totales"] > 1
         ]
 
@@ -183,7 +184,8 @@ class TestParseTransactions:
 
         # Act ------------------------------------------------------------
         cuotas_tx = [
-            t for t in enero_result.transacciones
+            t
+            for t in enero_result.transacciones
             if t.get("cuotas_totales") is not None and t["cuotas_totales"] > 1
         ]
 
@@ -213,8 +215,7 @@ class TestParseTransactions:
 
         # Act ------------------------------------------------------------
         tx_with_auth = [
-            t for t in abril_result.transacciones
-            if t.get("numero_autorizacion") is not None
+            t for t in abril_result.transacciones if t.get("numero_autorizacion") is not None
         ]
 
         # Assert ----------------------------------------------------------
@@ -241,8 +242,7 @@ class TestSubFilasMonedaOrig:
         # Act ------------------------------------------------------------
         # Buscar transacciones con moneda_original asignada
         tx_with_orig = [
-            t for t in enero_result.transacciones
-            if t.get("moneda_original") is not None
+            t for t in enero_result.transacciones if t.get("moneda_original") is not None
         ]
 
         # Assert ----------------------------------------------------------

@@ -67,6 +67,7 @@ def bdd_handler(bdd_extracto_repo, bdd_transaccion_repo, bdd_event_bus):
         transaccion_repo=bdd_transaccion_repo,
         categoria_repo=MagicMock(),
         presupuesto_repo=MagicMock(),
+        tarjeta_repo=MagicMock(),
         usuario_repo=MagicMock(),
         event_bus=bdd_event_bus,
     )
@@ -86,8 +87,12 @@ def _make_parse_result(periodo_inicio=None, periodo_fin=None, exitoso=True):
     if periodo_fin is not None:
         result_mock.metadatos["periodo_fin"] = periodo_fin
     result_mock.transacciones = [
-        {"fecha": date(2026, 5, 15), "comercio_original": "COMERCIO DE PRUEBA",
-         "valor": Decimal("50000"), "numero_cuotas": "1/1"}
+        {
+            "fecha": date(2026, 5, 15),
+            "comercio_original": "COMERCIO DE PRUEBA",
+            "valor": Decimal("50000"),
+            "numero_cuotas": "1/1",
+        }
     ]
     result_mock.errores = []
     return result_mock
@@ -97,8 +102,12 @@ async def _execute_handler_async(
     handler, extracto_repo, tarjeta_id, usuario_id, p_inicio, p_fin
 ) -> dict:
     saved_mock = MagicMock(
-        id=uuid4(), estado="COMPLETED", progress_pct=100,
-        tarjeta_id=tarjeta_id, periodo_inicio=p_inicio, periodo_fin=p_fin,
+        id=uuid4(),
+        estado="COMPLETED",
+        progress_pct=100,
+        tarjeta_id=tarjeta_id,
+        periodo_inicio=p_inicio,
+        periodo_fin=p_fin,
     )
     extracto_repo.save.return_value = saved_mock
 
@@ -108,8 +117,10 @@ async def _execute_handler_async(
     parser_mock.parse.return_value = parse_result
 
     cmd = CargarExtractoCommand(
-        usuario_id=usuario_id, tarjeta_id=tarjeta_id,
-        filename="test_extracto.xlsx", file_content=b"mock content",
+        usuario_id=usuario_id,
+        tarjeta_id=tarjeta_id,
+        filename="test_extracto.xlsx",
+        file_content=b"mock content",
     )
 
     result = {"status": "ok", "error": None}
@@ -137,9 +148,7 @@ async def _execute_handler_async(
     return result
 
 
-def _execute_handler(
-    handler, extracto_repo, tarjeta_id, usuario_id, p_inicio, p_fin
-) -> dict:
+def _execute_handler(handler, extracto_repo, tarjeta_id, usuario_id, p_inicio, p_fin) -> dict:
     """Wrapper sincrono para ejecutar el handler async."""
     return asyncio.run(
         _execute_handler_async(handler, extracto_repo, tarjeta_id, usuario_id, p_inicio, p_fin)
@@ -225,7 +234,11 @@ def when_subir_extracto_con_periodo(
         existing = bdd_context["extracto_existente"]
 
         def _side_effect(tarjeta_id, periodo_inicio, periodo_fin):
-            if tarjeta_id == bdd_context["tarjeta_id"] and periodo_inicio == expected_inicio and periodo_fin == expected_fin:
+            if (
+                tarjeta_id == bdd_context["tarjeta_id"]
+                and periodo_inicio == expected_inicio
+                and periodo_fin == expected_fin
+            ):
                 return existing
             return None
 
@@ -234,8 +247,12 @@ def when_subir_extracto_con_periodo(
         bdd_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
 
     bdd_context["_result"] = _execute_handler(
-        bdd_handler, bdd_extracto_repo, tarjeta_id, usuario_id,
-        periodo_inicio, periodo_fin,
+        bdd_handler,
+        bdd_extracto_repo,
+        tarjeta_id,
+        usuario_id,
+        periodo_inicio,
+        periodo_fin,
     )
 
 
@@ -251,7 +268,12 @@ def when_subir_extracto_sin_periodo(
     bdd_extracto_repo.get_by_tarjeta_and_periodo.return_value = None
 
     bdd_context["_result"] = _execute_handler(
-        bdd_handler, bdd_extracto_repo, tarjeta_id, usuario_id, None, None,
+        bdd_handler,
+        bdd_extracto_repo,
+        tarjeta_id,
+        usuario_id,
+        None,
+        None,
     )
 
 
@@ -299,6 +321,7 @@ def then_emite_evento_duplicado(bdd_context: dict, bdd_event_bus) -> None:
     bdd_event_bus.publish.assert_called()
     call_args = bdd_event_bus.publish.call_args[0][0]
     from src.domain.events import ExtractoDuplicadoDetectado
+
     assert isinstance(call_args, ExtractoDuplicadoDetectado)
 
 
@@ -313,6 +336,7 @@ def then_emite_evento_creado(bdd_context: dict, bdd_event_bus) -> None:
     bdd_event_bus.publish.assert_called()
     call_args = bdd_event_bus.publish.call_args[0][0]
     from src.domain.events import ExtractoProcesado
+
     assert isinstance(call_args, ExtractoProcesado)
 
 
@@ -341,7 +365,11 @@ def given_tarjeta_tiene_extracto_con_hash(bdd_context: dict, file_hash: str) -> 
     bdd_context["file_hash_existente"] = file_hash
 
 
-@when(parsers.parse('el usuario sube el mismo archivo Excel con hash "{file_hash}" para la tarjeta "{ultimos_4}"'))
+@when(
+    parsers.parse(
+        'el usuario sube el mismo archivo Excel con hash "{file_hash}" para la tarjeta "{ultimos_4}"'
+    )
+)
 def when_subir_extracto_con_hash(
     bdd_context: dict,
     bdd_handler: CommandHandler,
@@ -361,8 +389,12 @@ def when_subir_extracto_con_hash(
         bdd_extracto_repo.get_by_tarjeta_and_file_hash.return_value = existing
 
     bdd_context["_result"] = _execute_handler(
-        bdd_handler, bdd_extracto_repo, tarjeta_id, usuario_id,
-        date(2026, 6, 1), date(2026, 6, 30),
+        bdd_handler,
+        bdd_extracto_repo,
+        tarjeta_id,
+        usuario_id,
+        date(2026, 6, 1),
+        date(2026, 6, 30),
     )
 
 

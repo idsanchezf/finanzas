@@ -19,21 +19,26 @@ class TestBulkSave:
 
     @pytest.mark.asyncio
     async def test_Should_PersistMultipleTransacciones_When_BulkInsert(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Persiste multiples transacciones en lote."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
         extracto_id = uuid.uuid4()
         usuario_id = uuid.uuid4()
 
         modelos = [
             TransaccionModel(
-                id=uuid.uuid4(), extracto_id=extracto_id, usuario_id=usuario_id,
-                fecha=date(2026, 6, 1), comercio_original=f"Comercio {i}",
+                id=uuid.uuid4(),
+                extracto_id=extracto_id,
+                usuario_id=usuario_id,
+                fecha=date(2026, 6, 1),
+                comercio_original=f"Comercio {i}",
                 valor=Decimal(str(i * 10 + 10)),
             )
             for i in range(3)
@@ -52,13 +57,15 @@ class TestBulkSave:
 
     @pytest.mark.asyncio
     async def test_Should_HandleEmptyList_When_NoTransacciones(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Maneja lista vacia sin errores."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.transaccion_repo import (
             TransaccionRepository,
         )
+
         repo = TransaccionRepository(db_session)
 
         # Act ------------------------------------------------------------

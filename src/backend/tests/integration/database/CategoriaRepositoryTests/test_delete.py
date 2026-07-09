@@ -17,13 +17,16 @@ class TestDelete:
 
     @pytest.mark.asyncio
     async def test_Should_DeletePersonalizada_When_Exists(
-        self, db_session: AsyncSession, categoria_personalizada: CategoriaModel,
+        self,
+        db_session: AsyncSession,
+        categoria_personalizada: CategoriaModel,
     ):
         """Elimina una categoria personalizada existente."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -35,13 +38,16 @@ class TestDelete:
 
     @pytest.mark.asyncio
     async def test_Should_NotDeletePredefinida_When_SystemCategory(
-        self, db_session: AsyncSession, categoria_predefinida: CategoriaModel,
+        self,
+        db_session: AsyncSession,
+        categoria_predefinida: CategoriaModel,
     ):
         """No elimina categorias predefinidas del sistema."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -53,13 +59,15 @@ class TestDelete:
 
     @pytest.mark.asyncio
     async def test_Should_DoNothing_When_IdNotFound(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """No lanza error al eliminar un ID inexistente."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------

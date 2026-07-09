@@ -12,7 +12,6 @@ Convencion TDD:
 - Archivo: test_clasificar_por_reglas.py
 """
 
-
 import pytest
 
 from src.domain.entities.categoria import Categoria

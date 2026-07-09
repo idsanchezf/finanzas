@@ -17,7 +17,8 @@ class TestGetAll:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnPredefinidasAndPersonalizadas_When_UsuarioIdProvided(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
         categoria_predefinida: CategoriaModel,
         categoria_personalizada: CategoriaModel,
     ):
@@ -26,6 +27,7 @@ class TestGetAll:
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         user_id = categoria_personalizada.usuario_id
 
@@ -40,7 +42,8 @@ class TestGetAll:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnOnlyPredefinidas_When_UsuarioIdIsNone(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
         categoria_predefinida: CategoriaModel,
         categoria_personalizada: CategoriaModel,
     ):
@@ -49,6 +52,7 @@ class TestGetAll:
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -61,7 +65,8 @@ class TestGetAll:
 
     @pytest.mark.asyncio
     async def test_Should_IncludePersonalizadasOfDifferentUser_When_OtherUserId(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
         categoria_predefinida: CategoriaModel,
         categoria_personalizada: CategoriaModel,
     ):
@@ -70,6 +75,7 @@ class TestGetAll:
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         other_user_id = uuid.uuid4()
 

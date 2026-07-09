@@ -24,8 +24,7 @@ class TestCategoriasPredefinidas:
         """Todas las 14 categorias raiz definidas en la tabla de requerimientos."""
         count = len(CATEGORIAS_PREDEFINIDAS)
         assert count >= 14, (
-            f"Se esperaban al menos 14 categorias predefinidas, "
-            f"pero se encontraron {count}"
+            f"Se esperaban al menos 14 categorias predefinidas, pero se encontraron {count}"
         )
 
     def test_cada_categoria_tiene_nombre_no_vacio(self):
@@ -39,8 +38,7 @@ class TestCategoriasPredefinidas:
                 f"Categoria '{cat['nombre']}': color '{cat['color']}' no empieza con #"
             )
             assert len(cat["color"]) == 7, (
-                f"Categoria '{cat['nombre']}': color '{cat['color']}' "
-                f"no tiene 7 caracteres"
+                f"Categoria '{cat['nombre']}': color '{cat['color']}' no tiene 7 caracteres"
             )
 
     def test_cada_categoria_tiene_subcategorias(self):
@@ -64,16 +62,13 @@ class TestCategoriasPredefinidas:
         for cat in CATEGORIAS_PREDEFINIDAS:
             for sub_name, sub_keywords in cat["subcategorias"]:
                 assert len(sub_keywords) >= 1, (
-                    f"Subcategoria '{sub_name}' de '{cat['nombre']}' "
-                    f"no tiene palabras clave"
+                    f"Subcategoria '{sub_name}' de '{cat['nombre']}' no tiene palabras clave"
                 )
 
     def test_nombres_categorias_son_unicos(self):
         """Los nombres de categorias padre no se repiten."""
         nombres = [cat["nombre"] for cat in CATEGORIAS_PREDEFINIDAS]
-        assert len(nombres) == len(set(nombres)), (
-            f"Hay nombres de categoria duplicados: {nombres}"
-        )
+        assert len(nombres) == len(set(nombres)), f"Hay nombres de categoria duplicados: {nombres}"
 
     def test_nombres_subcategorias_son_unicos_dentro_del_padre(self):
         """Las subcategorias no se repiten dentro de la misma categoria padre."""
@@ -87,9 +82,7 @@ class TestCategoriasPredefinidas:
         """Cada categoria padre tiene un emoji/icono valido."""
         for cat in CATEGORIAS_PREDEFINIDAS:
             icono = cat["icono"].strip()
-            assert len(icono) >= 1, (
-                f"Categoria '{cat['nombre']}' tiene icono vacio"
-            )
+            assert len(icono) >= 1, f"Categoria '{cat['nombre']}' tiene icono vacio"
 
     def test_colores_formato_hex_valido(self):
         """Cada color es un codigo hexadecimal valido de 6 digitos."""
@@ -98,8 +91,7 @@ class TestCategoriasPredefinidas:
         hex_pattern = re.compile(r"^#[0-9A-Fa-f]{6}$")
         for cat in CATEGORIAS_PREDEFINIDAS:
             assert hex_pattern.match(cat["color"]), (
-                f"Categoria '{cat['nombre']}' tiene color invalido: "
-                f"'{cat['color']}'"
+                f"Categoria '{cat['nombre']}' tiene color invalido: '{cat['color']}'"
             )
 
 
@@ -129,8 +121,7 @@ class TestUUIDDeterministicos:
         uuid1 = subcat_uuid("🍔 Comida", "Ropa")
         uuid2 = subcat_uuid("👕 Ropa y Calzado", "Ropa")
         assert uuid1 != uuid2, (
-            "Subcategorias con mismo nombre en padres distintos "
-            "deberian tener UUIDs diferentes"
+            "Subcategorias con mismo nombre en padres distintos deberian tener UUIDs diferentes"
         )
 
     def test_todas_las_categorias_tienen_uuid_unico(self):
@@ -182,12 +173,10 @@ class TestCategoriasEspecificas:
             cat = cat_map.get(nombre)
             assert cat is not None, f"Categoria '{nombre}' no encontrada"
             assert cat["icono"] == icono, (
-                f"Categoria '{nombre}': icono esperado '{icono}', "
-                f"obtenido '{cat['icono']}'"
+                f"Categoria '{nombre}': icono esperado '{icono}', obtenido '{cat['icono']}'"
             )
             assert cat["color"] == color, (
-                f"Categoria '{nombre}': color esperado '{color}', "
-                f"obtenido '{cat['color']}'"
+                f"Categoria '{nombre}': color esperado '{color}', obtenido '{cat['color']}'"
             )
 
     def test_categoria_ingresos_existe(self):
@@ -211,16 +200,37 @@ class TestPalabrasClaveColombianas:
     """Verifica que las palabras clave incluyen comercios colombianos."""
 
     COLOMBIAN_KEYWORDS = [
-        "EXITO", "CARULLA", "D1", "JUMBO", "ARA", "OLIMPICA",
-        "TERPEL", "PRIMAX", "BIOMAX",
-        "AVIANCA", "LATAM", "WINGO",
-        "ENEL", "EPM", "CODENSA",
-        "CLARO", "TIGO", "MOVISTAR",
-        "FALABELLA", "ALKOSTO", "BOSI", "ARTURO CALLE", "KOOS",
-        "CINECOLOMBIA", "CINEMARK",
-        "SMARTFIT", "BODYTECH",
-        "SURA", "SANITAS",
-        "UDEA", "PLATZI",
+        "EXITO",
+        "CARULLA",
+        "D1",
+        "JUMBO",
+        "ARA",
+        "OLIMPICA",
+        "TERPEL",
+        "PRIMAX",
+        "BIOMAX",
+        "AVIANCA",
+        "LATAM",
+        "WINGO",
+        "ENEL",
+        "EPM",
+        "CODENSA",
+        "CLARO",
+        "TIGO",
+        "MOVISTAR",
+        "FALABELLA",
+        "ALKOSTO",
+        "BOSI",
+        "ARTURO CALLE",
+        "KOOS",
+        "CINECOLOMBIA",
+        "CINEMARK",
+        "SMARTFIT",
+        "BODYTECH",
+        "SURA",
+        "SANITAS",
+        "UDEA",
+        "PLATZI",
         "COLPAGOS",
         "CRUZ VERDE",
         "TRANSMILENIO",
@@ -241,6 +251,4 @@ class TestPalabrasClaveColombianas:
             if kw.upper() not in all_keywords:
                 missing.append(kw)
 
-        assert not missing, (
-            f"Faltan palabras clave de comercios colombianos: {missing}"
-        )
+        assert not missing, f"Faltan palabras clave de comercios colombianos: {missing}"

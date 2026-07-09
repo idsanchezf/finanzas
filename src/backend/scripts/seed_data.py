@@ -28,7 +28,9 @@ async def seed_categories() -> int:
     from src.infrastructure.persistence.unit_of_work import create_session_factory
     from src.infrastructure.persistence.repositories.categoria_repo import CategoriaRepository
 
-    db_url = os.getenv("DATABASE_URL_SYNC", "postgresql://postgres:postgres@localhost:5432/finance_report")
+    db_url = os.getenv(
+        "DATABASE_URL_SYNC", "postgresql://postgres:postgres@localhost:5432/finance_report"
+    )
     db_url_async = db_url.replace("postgresql://", "postgresql+asyncpg://")
 
     session_factory = await create_session_factory(db_url_async)

@@ -82,9 +82,7 @@ class TestValidateRefreshToken:
         """Lanza error si se intenta validar un access token como refresh."""
         # Arrange --------------------------------------------------------
         svc = self._make_service()
-        access = svc.generate_access_token(
-            user_id=str(uuid.uuid4()), email="t@t.com", nombre="T"
-        )
+        access = svc.generate_access_token(user_id=str(uuid.uuid4()), email="t@t.com", nombre="T")
 
         # Act & Assert ----------------------------------------------------
         with pytest.raises(JWTError, match="No es un refresh token"):
