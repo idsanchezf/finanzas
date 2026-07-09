@@ -48,6 +48,32 @@ Este proyecto utiliza ingenieria de arneses con opencode para orquestar el ciclo
 - Aplicar TDD (skill `tdd`) en implementacion y BDD (skill `bdd`) en criterios de aceptacion
 - Mantener vivo `docs/architecture.md` con ADRs actualizados via agente `architect`
 
+### Flujo de integracion (Git Flow)
+
+El flujo de ramas es **unidireccional** y **estricto**. El agente `features` es el guardian del flujo.
+
+```
+feature/* ──PR──▶ develop ──release/*──▶ main
+                         ▲                    │
+                         └──hotfix/*──────────┘
+```
+
+| Rama | Recibe de | Entrega a | Protegida | Push directo |
+|------|-----------|-----------|-----------|--------------|
+| `main` | `release/*`, `hotfix/*` | — | ✅ Solo PR + CI verde | ❌ NUNCA |
+| `develop` | `feature/*`, `release/*` | `release/*` | ✅ Solo PR + CI verde | ❌ NUNCA |
+| `feature/*` | — | `develop` via PR | ❌ | ✅ Ok durante desarrollo |
+| `release/*` | `develop` | `main` + `develop` | ❌ | ❌ |
+| `hotfix/*` | `main` | `main` + `develop` | ❌ | ❌ |
+
+**Reglas de integridad del flujo:**
+
+1. **Nunca hacer push directo a `main` ni `develop`.** Solo PRs.
+2. **Nunca mergear `main` → `develop`.** Si `main` tiene codigo que `develop` no tiene, el flujo esta roto. Corregir el proceso, no la rama.
+3. El agente `features` verifica divergencia antes de crear cualquier feature. Si `develop` esta atrasado respecto a `main`, **bloquea la operacion** y reporta al usuario.
+4. El agente `leader` verifica divergencia al iniciar sesion y advierte si `develop` no esta sincronizado.
+5. Al completar una feature, `features` crea un PR hacia `develop` (no mergea directo).
+
 ### Validacion de codigo antes de commit
 
 **Obligatorio** ejecutar ambos comandos de ruff y los tests en local antes de cada commit. El pipeline de CI fallara si alguno no pasa:

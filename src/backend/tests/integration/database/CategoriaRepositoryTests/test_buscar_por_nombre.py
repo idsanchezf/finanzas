@@ -17,13 +17,15 @@ class TestBuscarPorNombre:
 
     @pytest.mark.asyncio
     async def test_Should_FindCategory_When_ExactNameMatch(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Encuentra categoria por coincidencia exacta de nombre."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         user_id = uuid.uuid4()
         model = CategoriaModel(
@@ -44,13 +46,15 @@ class TestBuscarPorNombre:
 
     @pytest.mark.asyncio
     async def test_Should_FindByPartialMatch_When_SubstringProvided(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Encuentra por coincidencia parcial (ILIKE)."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         user_id = uuid.uuid4()
         model = CategoriaModel(
@@ -72,13 +76,16 @@ class TestBuscarPorNombre:
 
     @pytest.mark.asyncio
     async def test_Should_IncludePredefinidas_When_UsuarioIdNone(
-        self, db_session: AsyncSession, categoria_predefinida: CategoriaModel,
+        self,
+        db_session: AsyncSession,
+        categoria_predefinida: CategoriaModel,
     ):
         """Busca entre predefinidas cuando no se especifica usuario."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------
@@ -90,13 +97,15 @@ class TestBuscarPorNombre:
 
     @pytest.mark.asyncio
     async def test_Should_ReturnEmpty_When_NoMatch(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Retorna lista vacia cuando no hay coincidencias."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
 
         # Act ------------------------------------------------------------

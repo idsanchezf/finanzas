@@ -31,9 +31,7 @@ class TestGenerateAccessToken:
         nombre = "Test User"
 
         # Act ------------------------------------------------------------
-        token = svc.generate_access_token(
-            user_id=user_id, email=email, nombre=nombre
-        )
+        token = svc.generate_access_token(user_id=user_id, email=email, nombre=nombre)
 
         # Assert ----------------------------------------------------------
         assert isinstance(token, str)
@@ -61,6 +59,7 @@ class TestGenerateAccessToken:
 
         # Assert ----------------------------------------------------------
         import time
+
         time.sleep(2)
 
         # Debe fallar porque expiro

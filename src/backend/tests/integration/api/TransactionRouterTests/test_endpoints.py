@@ -63,20 +63,27 @@ async def _build_test_app(
         get_current_user_id,
         get_db_session,
         get_extracto_repo,
+        get_tarjeta_repo,
         get_transaccion_repo,
         get_usuario_repo,
     )
+    from src.api.middleware.error_handler import handle_domain_exception
     from src.api.routers.transactions import router as transactions_router
     from src.application.handlers.command_handlers import CommandHandler
+    from src.domain.exceptions import DomainError
     from src.infrastructure.persistence.repositories import (
         CategoriaRepository,
         ExtractoRepository,
+        TarjetaRepository,
         TransaccionRepository,
         UsuarioRepository,
     )
 
     app = FastAPI()
     app.include_router(transactions_router, prefix="/api/v1/transactions")
+
+    # ---- Exception handler: DomainError -> 404/409/422 ----
+    app.add_exception_handler(DomainError, handle_domain_exception)
 
     # ---- Override: DB session ----
     async def _override_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -102,6 +109,7 @@ async def _build_test_app(
         extracto_repo: ExtractoRepository = Depends(get_extracto_repo),
         transaccion_repo: TransaccionRepository = Depends(get_transaccion_repo),
         categoria_repo: CategoriaRepository = Depends(get_categoria_repo),
+        tarjeta_repo: TarjetaRepository = Depends(get_tarjeta_repo),
         usuario_repo: UsuarioRepository = Depends(get_usuario_repo),
     ) -> CommandHandler:
         return CommandHandler(
@@ -109,6 +117,7 @@ async def _build_test_app(
             transaccion_repo=transaccion_repo,
             categoria_repo=categoria_repo,
             presupuesto_repo=None,
+            tarjeta_repo=tarjeta_repo,
             usuario_repo=usuario_repo,
             event_bus=None,
         )
@@ -121,54 +130,64 @@ async def _build_test_app(
 async def _create_test_data(session: AsyncSession) -> None:
     """Inserta datos de prueba: usuario, tarjeta, extracto, categorias, transacciones."""
     # Usuario
-    session.add(UsuarioModel(
-        id=TEST_USER_ID,
-        email="test@financereport.local",
-        nombre="Test User",
-        auth_provider="google",
-        auth_provider_id="test-google-id",
-    ))
+    session.add(
+        UsuarioModel(
+            id=TEST_USER_ID,
+            email="test@financereport.local",
+            nombre="Test User",
+            auth_provider="google",
+            auth_provider_id="test-google-id",
+        )
+    )
 
     # Tarjeta
-    session.add(TarjetaModel(
-        id=uuid.uuid4(),
-        usuario_id=TEST_USER_ID,
-        banco="Bancolombia",
-        ultimos_4_digitos="1234",
-        tipo="credito",
-    ))
+    session.add(
+        TarjetaModel(
+            id=uuid.uuid4(),
+            usuario_id=TEST_USER_ID,
+            banco="Bancolombia",
+            ultimos_4_digitos="1234",
+            tipo="credito",
+        )
+    )
 
     # Extracto
-    session.add(ExtractoModel(
-        id=TEST_EXTRACTO_ID,
-        tarjeta_id=uuid.uuid4(),
-        usuario_id=TEST_USER_ID,
-        estado="COMPLETED",
-        periodo_inicio=date(2026, 6, 1),
-        periodo_fin=date(2026, 6, 30),
-        fecha_corte=date(2026, 6, 15),
-        pago_total=Decimal("5000.00"),
-        cupo_total=Decimal("10000.00"),
-        cupo_disponible=Decimal("5000.00"),
-    ))
+    session.add(
+        ExtractoModel(
+            id=TEST_EXTRACTO_ID,
+            tarjeta_id=uuid.uuid4(),
+            usuario_id=TEST_USER_ID,
+            estado="COMPLETED",
+            periodo_inicio=date(2026, 6, 1),
+            periodo_fin=date(2026, 6, 30),
+            fecha_corte=date(2026, 6, 15),
+            pago_total=Decimal("5000.00"),
+            cupo_total=Decimal("10000.00"),
+            cupo_disponible=Decimal("5000.00"),
+        )
+    )
 
     # Categorias
-    session.add(CategoriaModel(
-        id=TEST_CATEGORIA_ID,
-        nombre="Alimentacion",
-        icono="🍔",
-        color="#FF6B6B",
-        es_predefinida=True,
-        palabras_clave=["restaurante", "comida"],
-    ))
-    session.add(CategoriaModel(
-        id=TEST_CATEGORIA_ALT_ID,
-        nombre="Transporte",
-        icono="🚗",
-        color="#4ECDC4",
-        es_predefinida=True,
-        palabras_clave=["gasolina", "transporte"],
-    ))
+    session.add(
+        CategoriaModel(
+            id=TEST_CATEGORIA_ID,
+            nombre="Alimentacion",
+            icono="🍔",
+            color="#FF6B6B",
+            es_predefinida=True,
+            palabras_clave=["restaurante", "comida"],
+        )
+    )
+    session.add(
+        CategoriaModel(
+            id=TEST_CATEGORIA_ALT_ID,
+            nombre="Transporte",
+            icono="🚗",
+            color="#4ECDC4",
+            es_predefinida=True,
+            palabras_clave=["gasolina", "transporte"],
+        )
+    )
 
     # Transacciones de prueba
     transacciones = [
@@ -257,6 +276,7 @@ async def _create_test_data(session: AsyncSession) -> None:
 # Fixture: app con datos de prueba
 # ============================================================
 
+
 @pytest_asyncio.fixture
 async def test_app() -> AsyncGenerator[FastAPI, None]:
     """Crea un app FastAPI con SQLite en memoria y datos de prueba.
@@ -276,7 +296,9 @@ async def test_app() -> AsyncGenerator[FastAPI, None]:
         await conn.run_sync(Base.metadata.create_all)
 
     session_factory = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False,
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
 
     # Insertar datos de prueba
@@ -308,11 +330,13 @@ async def client(test_app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 # ListTransactions — GET /
 # ============================================================
 
+
 class TestListTransactions:
     """Escenarios para GET / — listar transacciones con filtros."""
 
     async def test_Should_ReturnPaginatedResults_When_NoFilters(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna lista paginada de transacciones del usuario."""
         # Act ------------------------------------------------------------
@@ -330,7 +354,8 @@ class TestListTransactions:
         assert data["page"] == 1
 
     async def test_Should_RespectPageSize_When_SizeParam(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Respeta el parametro size para paginar."""
         # Act ------------------------------------------------------------
@@ -343,7 +368,8 @@ class TestListTransactions:
         assert len(data["items"]) == 2
 
     async def test_Should_ReturnSecondPage_When_Page2(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna la segunda pagina correctamente."""
         # Act ------------------------------------------------------------
@@ -358,7 +384,8 @@ class TestListTransactions:
         assert len(data["items"]) == 2
 
     async def test_Should_FilterByExtractId_When_ExtractFilterProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Filtra transacciones por extracto_id."""
         # Act ------------------------------------------------------------
@@ -371,7 +398,8 @@ class TestListTransactions:
         assert data["total"] == 0
 
     async def test_Should_FilterByCategory_When_CategoryFilterProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Filtra transacciones por categoria_id."""
         # Act ------------------------------------------------------------
@@ -385,7 +413,8 @@ class TestListTransactions:
             assert item["categoria_id"] == str(TEST_CATEGORIA_ID)
 
     async def test_Should_FilterBySearch_When_SearchTermProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Filtra por termino de busqueda en comercio."""
         # Act ------------------------------------------------------------
@@ -398,7 +427,8 @@ class TestListTransactions:
         assert "netflix" in data["items"][0]["comercio"].lower()
 
     async def test_Should_FilterByConfidenceHigh_When_ConfidenceFilterProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Filtra por nivel de confianza HIGH."""
         # Act ------------------------------------------------------------
@@ -411,7 +441,8 @@ class TestListTransactions:
             assert item["confidence"] is None or item["confidence"] >= 90
 
     async def test_Should_SortByValorAsc_When_SortParamsProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Ordena transacciones por valor ascendente."""
         # Act ------------------------------------------------------------
@@ -424,7 +455,8 @@ class TestListTransactions:
         assert valores == sorted(valores)
 
     async def test_Should_DefaultSortByFechaDesc_When_NoSortParams(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Orden por defecto: fecha descendente."""
         # Act ------------------------------------------------------------
@@ -441,13 +473,15 @@ class TestListTransactions:
 # GetTransaction — GET /{id}
 # ============================================================
 
+
 class TestGetTransaction:
     """Escenarios para GET /{id} — detalle de transaccion."""
 
     TRANS_ID = uuid.UUID("d0000000-0000-0000-0000-000000000001")
 
     async def test_Should_ReturnTransactionDetail_When_ValidId(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna el detalle completo de una transaccion existente."""
         # Act ------------------------------------------------------------
@@ -464,7 +498,8 @@ class TestGetTransaction:
         assert data["confidence"] == 95.0
 
     async def test_Should_Return404_When_TransactionNotFound(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 404 cuando la transaccion no existe."""
         # Act ------------------------------------------------------------
@@ -480,13 +515,15 @@ class TestGetTransaction:
 # UpdateTransactionCategory — PATCH /{id}/category
 # ============================================================
 
+
 class TestUpdateTransactionCategory:
     """Escenarios para PATCH /{id}/category — cambiar categoria."""
 
     TRANS_ID = uuid.UUID("d0000000-0000-0000-0000-000000000002")
 
     async def test_Should_UpdateCategory_When_ValidData(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Cambia la categoria de una transaccion exitosamente."""
         # Act ------------------------------------------------------------
@@ -507,7 +544,8 @@ class TestUpdateTransactionCategory:
         assert get_resp.json()["categoria_id"] == str(TEST_CATEGORIA_ID)
 
     async def test_Should_Return400_When_CategoryIdMissing(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 400 cuando falta category_id en el body."""
         # Act ------------------------------------------------------------
@@ -521,7 +559,8 @@ class TestUpdateTransactionCategory:
         assert "category_id" in response.json()["detail"].lower()
 
     async def test_Should_Return404_When_TransactionNotFound(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 404 cuando la transaccion no existe."""
         # Act ------------------------------------------------------------
@@ -539,6 +578,7 @@ class TestUpdateTransactionCategory:
 # BulkUpdateCategory — PATCH /bulk/category
 # ============================================================
 
+
 class TestBulkUpdateCategory:
     """Escenarios para PATCH /bulk/category — clasificacion masiva."""
 
@@ -548,7 +588,8 @@ class TestBulkUpdateCategory:
     ]
 
     async def test_Should_UpdateMultipleCategories_When_ValidData(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Actualiza la categoria de multiples transacciones a la vez."""
         # Act ------------------------------------------------------------
@@ -571,7 +612,8 @@ class TestBulkUpdateCategory:
             assert get_resp.json()["categoria_id"] == str(TEST_CATEGORIA_ALT_ID)
 
     async def test_Should_Return400_When_MissingTransactionIds(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 400 cuando faltan los transaction_ids."""
         # Act ------------------------------------------------------------
@@ -585,7 +627,8 @@ class TestBulkUpdateCategory:
         assert "transaction_ids" in response.json()["detail"].lower()
 
     async def test_Should_Return400_When_MissingCategoryId(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 400 cuando falta el category_id."""
         # Act ------------------------------------------------------------
@@ -602,17 +645,17 @@ class TestBulkUpdateCategory:
 # GetUnclassified — GET /unclassified/list
 # ============================================================
 
+
 class TestGetUnclassified:
     """Escenarios para GET /unclassified/list — transacciones con confianza baja."""
 
     async def test_Should_ReturnUnclassifiedTransactions_When_LowConfidence(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna transacciones con confianza < 70% o sin clasificar."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/unclassified/list?extract_id={TEST_EXTRACTO_ID}"
-        )
+        response = await client.get(f"/unclassified/list?extract_id={TEST_EXTRACTO_ID}")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -630,11 +673,13 @@ class TestGetUnclassified:
 # SearchTransactions — GET /search
 # ============================================================
 
+
 class TestSearchTransactions:
     """Escenarios para GET /search — busqueda full-text por comercio."""
 
     async def test_Should_ReturnMatchingTransactions_When_SearchTerm(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Busca transacciones que coincidan con el termino de busqueda."""
         # Act ------------------------------------------------------------
@@ -649,7 +694,8 @@ class TestSearchTransactions:
         assert "didi" in item["comercio"].lower()
 
     async def test_Should_ReturnEmpty_When_NoMatch(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna lista vacia cuando no hay coincidencias."""
         # Act ------------------------------------------------------------
@@ -661,7 +707,8 @@ class TestSearchTransactions:
         assert len(data["items"]) == 0
 
     async def test_Should_Return400_When_SearchTermTooShort(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 422 cuando el termino es demasiado corto (< 2 chars)."""
         # Act ------------------------------------------------------------

@@ -22,6 +22,7 @@ from src.domain.value_objects.money import Money
 # TestInit — Creacion y valores por defecto
 # ============================================================
 
+
 class TestInit:
     """Tests para el constructor __init__ y valores por defecto."""
 
@@ -130,6 +131,7 @@ class TestInit:
 # TestValidacionFechas — Validacion de periodo
 # ============================================================
 
+
 class TestValidacionFechas:
     """Tests para validacion de fechas del periodo."""
 
@@ -172,6 +174,7 @@ class TestValidacionFechas:
 # ============================================================
 # TestDiasParaPago — Calculo de dias hasta fecha de pago
 # ============================================================
+
 
 class TestDiasParaPago:
     """Tests para el calculo de dias hasta la fecha limite de pago."""
@@ -265,6 +268,7 @@ class TestDiasParaPago:
 # TestCupoUtilizacion — Calculo de utilizacion de cupo
 # ============================================================
 
+
 class TestCupoUtilizacion:
     """Tests para el calculo de porcentaje de cupo utilizado."""
 
@@ -339,6 +343,7 @@ class TestCupoUtilizacion:
 # TestAsociacionTransacciones — Asociacion de transacciones
 # ============================================================
 
+
 class TestAsociacionTransacciones:
     """Tests para asociar transacciones al extracto."""
 
@@ -384,6 +389,7 @@ class TestAsociacionTransacciones:
 # ============================================================
 # TestMoneyVO — Uso de Money Value Object
 # ============================================================
+
 
 class TestMoneyVO:
     """Tests para verificar que los montos usan el Value Object Money."""
@@ -470,6 +476,7 @@ class TestMoneyVO:
 # ============================================================
 # TestTransicionesEstado — Transiciones de estado
 # ============================================================
+
 
 class TestTransicionesEstado:
     """Tests para las transiciones validas de estado del extracto."""
@@ -634,6 +641,7 @@ class TestTransicionesEstado:
 # ============================================================
 # TestProperties — Propiedades adicionales
 # ============================================================
+
 
 class TestProperties:
     """Tests para propiedades derivadas."""

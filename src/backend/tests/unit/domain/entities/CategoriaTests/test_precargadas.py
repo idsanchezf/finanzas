@@ -15,10 +15,20 @@ class TestPrecargadas:
     """Tests para precargadas() classmethod."""
 
     NOMBRES_ESPERADOS = {
-        "Alimentacion", "Transporte", "Vivienda", "Salud",
-        "Entretenimiento", "Educacion", "Ropa y Moda", "Financieros",
-        "Tecnologia", "Viajes", "Servicios", "Suscripciones",
-        "Mascotas", "Otros",
+        "Alimentacion",
+        "Transporte",
+        "Vivienda",
+        "Salud",
+        "Entretenimiento",
+        "Educacion",
+        "Ropa y Moda",
+        "Financieros",
+        "Tecnologia",
+        "Viajes",
+        "Servicios",
+        "Suscripciones",
+        "Mascotas",
+        "Otros",
     }
 
     def test_Should_Return14Categories_When_Called(self):
@@ -84,9 +94,7 @@ class TestPrecargadas:
 
         # Assert ----------------------------------------------------------
         for cat in categorias:
-            assert cat.icono and cat.icono != "📁", (
-                f"{cat.nombre} debe tener icono personalizado"
-            )
+            assert cat.icono and cat.icono != "📁", f"{cat.nombre} debe tener icono personalizado"
 
     def test_Should_AllHaveColor_When_Precargadas(self):
         """Cada categoria tiene un color definido (hex)."""

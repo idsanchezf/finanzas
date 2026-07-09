@@ -1,0 +1,62 @@
+{
+  "featureId": "feat-004",
+  "featureName": "Resolver hallazgos criticos de auditoria",
+  "tasks": [
+    {
+      "id": "task-001",
+      "title": "FUNC-001: Propagar metadatos de tarjeta del parser a la entidad",
+      "description": "Propagar ultimos_4_digitos y banco del parser a la entidad Tarjeta en handle_cargar_extracto. Modificar command_handlers.py para leer metadatos del parser y actualizar tarjeta.",
+      "featureId": "feat-004",
+      "status": "done",
+      "startedAt": "2026-07-08T20:10:00Z",
+      "completedAt": "2026-07-08T20:15:00Z",
+      "estimatedHours": 2,
+      "files": [
+        "src/backend/src/application/handlers/command_handlers.py",
+        "src/backend/src/api/routers/extracts.py"
+      ]
+    },
+    {
+      "id": "task-002",
+      "title": "FUNC-002: Conectar handle_clasificar_transaccion con ClassificationService",
+      "description": "Conectar handle_clasificar_transaccion con ClassificationService/ClasificadorReglas. Implementar clasificacion real: invocar ClasificadorReglas, actualizar transaccion, persistir.",
+      "featureId": "feat-004",
+      "status": "done",
+      "startedAt": "2026-07-08T20:15:00Z",
+      "completedAt": "2026-07-08T20:30:00Z",
+      "estimatedHours": 2,
+      "files": [
+        "src/backend/src/application/handlers/command_handlers.py"
+      ]
+    },
+    {
+      "id": "task-003",
+      "title": "FUNC-003: Implementar PresupuestoRepository concreto y conectar endpoints",
+      "description": "Implementar PresupuestoRepository concreto y conectar endpoints. Crear archivo presupuesto_repo.py en infrastructure/persistence/repositories/, crear modelo ORM si no existe, conectar en dependencies.py, y actualizar endpoints de budgets para usar el repositorio.",
+      "featureId": "feat-004",
+      "status": "done",
+      "startedAt": "2026-07-08T20:30:00Z",
+      "completedAt": "2026-07-08T20:45:00Z",
+      "estimatedHours": 4,
+      "files": [
+        "src/backend/src/infrastructure/persistence/repositories/presupuesto_repo.py",
+        "src/backend/src/infrastructure/dependencies.py",
+        "src/backend/src/api/routers/budgets.py"
+      ]
+    },
+    {
+      "id": "task-004",
+      "title": "APP-001: Reemplazar ValueError por excepciones de dominio",
+      "description": "Reemplazar ValueError por excepciones de dominio en 6 handlers. Sustituir ValueError con DomainError apropiados (EntidadNoEncontradaError, ValidacionError).",
+      "featureId": "feat-004",
+      "status": "done",
+      "startedAt": "2026-07-08T20:45:00Z",
+      "completedAt": "2026-07-08T21:00:00Z",
+      "estimatedHours": 1,
+      "files": [
+        "src/backend/src/application/handlers/command_handlers.py",
+        "src/backend/src/application/handlers/query_handlers.py"
+      ]
+    }
+  ]
+}

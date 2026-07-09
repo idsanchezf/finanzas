@@ -44,9 +44,7 @@ class TestValidateAccessToken:
         svc = self._make_service(secret="exp-test-secret")
         svc.access_token_ttl = -1  # Token que expira inmediatamente
         user_id = str(uuid.uuid4())
-        token = svc.generate_access_token(
-            user_id=user_id, email="test@example.com", nombre="Test"
-        )
+        token = svc.generate_access_token(user_id=user_id, email="test@example.com", nombre="Test")
 
         # Act & Assert ----------------------------------------------------
         with pytest.raises(JWTError):
@@ -57,9 +55,7 @@ class TestValidateAccessToken:
         # Arrange --------------------------------------------------------
         svc = self._make_service(secret="secret-a")
         user_id = str(uuid.uuid4())
-        token = svc.generate_access_token(
-            user_id=user_id, email="test@example.com", nombre="Test"
-        )
+        token = svc.generate_access_token(user_id=user_id, email="test@example.com", nombre="Test")
 
         # Crear servicio con secreto diferente para validar
         svc_b = JWTService(

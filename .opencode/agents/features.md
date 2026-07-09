@@ -198,22 +198,58 @@ Las tareas se leen/escriben del archivo `docs/features/{featureId}-{slug}/tasks.
 
 ## Creacion de rama feature/*
 
-Al ejecutar `start F003`, ademas de validar la regla una-feature-a-la-vez, creas la rama git:
+Al ejecutar `start F003`, ademas de validar la regla una-feature-a-la-vez, realizas el siguiente pre-flight check obligatorio:
+
+### Pre-flight check (obligatorio antes de crear cualquier feature)
+
+```
+1. git fetch origin
+2. git checkout develop
+3. git pull origin develop
+4. git log origin/develop..origin/main --oneline
+```
+
+**Si hay commits en `main` que no estan en `develop`:**
+
+```
+❌ BLOQUEAR la creacion de la feature.
+
+Reportar al leader:
+"NO se puede crear {featureId}. develop esta desincronizado de main.
+ Las siguientes features llegaron a main sin pasar por develop:
+   <lista de commits>
+ 
+ El flujo GitFlow es unidireccional: feature/* → develop → main.
+ Hacer un PR main → develop es antinatural y no resuelve el problema de raiz.
+ 
+ Accion requerida: el administrador debe revisar que features se saltaron
+ el proceso y re-ejecutar el flujo correctamente (PR feature/* → develop)."
+```
+
+**Si `develop` esta sincronizado con `main` (0 commits de divergencia):**
 
 ```bash
-git checkout develop
-git pull origin develop
 git checkout -b feature/F003-integracion-pago
 ```
 
-El nombre de la rama se genera como `feature/{id}-{slug}`, donde `slug` es el nombre de la feature en kebab-case (minusculas, guiones, sin acentos).
+Continuar normalmente con la creacion de la feature.
 
 ### Al completar feature
 
 Al ejecutar `complete F003`:
-1. Se hace push de la rama feature al remoto
-2. Se crea un pull request hacia `develop` usando GitHub CLI
-3. Se marca la feature como `in_review` con la URL del PR
+1. **Ejecutar validaciones locales:**
+   ```bash
+   ruff check src/
+   ruff format --check src/
+   pytest tests/ -v
+   ```
+   Si alguna falla, reportar el error y NO continuar.
+
+2. Se hace push de la rama feature al remoto
+3. Se crea un pull request hacia `develop` usando GitHub CLI
+4. Se marca la feature como `in_review` con la URL del PR
+5. **NO se mergea automaticamente.** Se espera CI verde + revision.
+6. Si el CI falla, se notifica al leader para corregir y re-pushear.
 
 ```bash
 git push -u origin feature/F003-integracion-pago
@@ -339,7 +375,10 @@ Feature F002: Gestion de ordenes   [████████░░]  43% (3/7 ta
 - Nunca borras features completadas (mantienes historico)
 - Los IDs de feature se auto-incrementan (F001, F002, ...)
 - Cada feature iniciada debe tener su rama `feature/*` creada desde `develop`
+- **Pre-flight check obligatorio**: antes de crear una feature, verificar `git log origin/develop..origin/main`. Si hay divergencia, bloquear la operacion.
+- **NUNCA crear PR de `main` → `develop`.** El flujo Git Flow es unidireccional: feature/* → develop → main. Si main tiene codigo que develop no tiene, el proceso esta roto y debe corregirse.
 - **El stack tecnologico se lee de `docs/architecture.md`** (seccion "Stack tecnologico"), no de `.harness-state.json`
+- **Al completar feature**: ejecutar ruff + tests locales antes del push. Si fallan, no crear el PR.
 
 ## Permisos y herramientas
 

@@ -23,6 +23,7 @@ from src.application.queries import (
     ObtenerInsightsQuery,
     ObtenerTransaccionesQuery,
 )
+from src.domain.exceptions import EntidadNoEncontradaError
 from src.domain.repositories import (
     ICategoriaRepository,
     IExtractoRepository,
@@ -59,7 +60,7 @@ class QueryHandler:
         """
         extracto = await self.extracto_repo.get_by_id(query.extracto_id)
         if not extracto:
-            raise ValueError(f"Extracto {query.extracto_id} no encontrado")
+            raise EntidadNoEncontradaError(entidad="Extracto", entidad_id=query.extracto_id)
 
         transacciones = await self.transaccion_repo.get_by_extracto(query.extracto_id)
 

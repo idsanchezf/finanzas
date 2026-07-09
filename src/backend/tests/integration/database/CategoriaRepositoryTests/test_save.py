@@ -17,13 +17,15 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_PersistNewCategoria_When_ValidModel(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Crea y persiste una nueva categoria desde el modelo."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         model = CategoriaModel(
             id=uuid.uuid4(),
@@ -50,13 +52,16 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_UpdateExistingCategoria_When_Merged(
-        self, db_session: AsyncSession, categoria_predefinida: CategoriaModel,
+        self,
+        db_session: AsyncSession,
+        categoria_predefinida: CategoriaModel,
     ):
         """Actualiza una categoria existente via merge."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         categoria_predefinida.nombre = "Alimentacion Modificada"
 
@@ -72,13 +77,15 @@ class TestSave:
 
     @pytest.mark.asyncio
     async def test_Should_SaveCategoryWithKeywords_When_KeywordsProvided(
-        self, db_session: AsyncSession,
+        self,
+        db_session: AsyncSession,
     ):
         """Persiste una categoria con palabras clave JSON."""
         # Arrange --------------------------------------------------------
         from src.infrastructure.persistence.repositories.categoria_repo import (
             CategoriaRepository,
         )
+
         repo = CategoriaRepository(db_session)
         keywords = ["supermercado", "mercado", "comida rapida"]
         model = CategoriaModel(

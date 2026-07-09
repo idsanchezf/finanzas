@@ -1,7 +1,7 @@
 {
   "project": "Finance Report",
   "createdAt": "2026-06-02T00:00:00Z",
-  "updatedAt": "2026-07-04T02:00:00Z",
+  "updatedAt": "2026-07-08T21:00:00Z",
   "humanInTheLoop": false,
   "currentPhase": "completed",
   "phases": {
@@ -12,7 +12,7 @@
     "develop":    { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:10:00Z", "completedAt": "2026-07-04T00:25:00Z" },
     "test":       { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:25:00Z", "completedAt": "2026-07-04T00:25:00Z" },
     "quality":    { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:25:00Z", "completedAt": "2026-07-04T00:30:00Z" },
-    "deploy":     { "status": "completed", "approved": false, "startedAt": "2026-07-04T00:30:00Z", "completedAt": "2026-07-04T01:00:00Z" }
+    "deploy":     { "status": "completed",  "approved": false, "startedAt": "2026-07-04T00:30:00Z", "completedAt": "2026-07-04T01:00:00Z" }
   },
   "features": [
     {
@@ -57,6 +57,21 @@
       "startedAt": "2026-06-22T02:00:00Z",
       "completedAt": "2026-07-04T02:00:00Z",
       "branch": "feature/feat-003-prevenir-extractos-duplicados"
+    },
+    {
+      "id": "feat-004",
+      "name": "Resolver hallazgos criticos de auditoria",
+      "slug": "resolver-hallazgos-criticos-auditoria",
+      "description": "Resolver los 4 hallazgos criticos de la auditoria de arquitectura funcional (2026-07-06): FUNC-001 (propagar ultimos_4_digitos del parser a la entidad Tarjeta), FUNC-002 (conectar handle_clasificar_transaccion con ClassificationService), FUNC-003 (implementar PresupuestoRepository), APP-001 (reemplazar ValueError por excepciones de dominio en 6 handlers)",
+      "status": "done",
+      "phase": "develop",
+      "priority": "high",
+      "assignedTo": "develop",
+      "docsPath": "docs/features/feat-004-resolver-hallazgos-criticos-auditoria/",
+      "createdAt": "2026-07-08T20:04:00Z",
+      "startedAt": "2026-07-08T20:04:00Z",
+      "completedAt": "2026-07-08T21:00:00Z",
+      "branch": "feature/feat-004-resolver-hallazgos-criticos-auditoria"
     }
   ]
 }

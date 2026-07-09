@@ -92,10 +92,15 @@ async def _build_test_app(
         get_db_session,
         get_redis,
     )
+    from src.api.middleware.error_handler import handle_domain_exception
     from src.api.routers.dashboard import router as dashboard_router
+    from src.domain.exceptions import DomainError
 
     app = FastAPI()
     app.include_router(dashboard_router, prefix="/api/v1/dashboard")
+
+    # ---- Exception handler: DomainError -> 404/409/422 ----
+    app.add_exception_handler(DomainError, handle_domain_exception)
 
     # ---- Override: DB session ----
     async def _override_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -121,87 +126,103 @@ async def _build_test_app(
 async def _create_test_data(session: AsyncSession) -> None:
     """Inserta datos de prueba completos para los dashboards."""
     # Usuario
-    session.add(UsuarioModel(
-        id=TEST_USER_ID,
-        email="test@financereport.local",
-        nombre="Test User",
-        auth_provider="google",
-        auth_provider_id="test-google-id",
-    ))
+    session.add(
+        UsuarioModel(
+            id=TEST_USER_ID,
+            email="test@financereport.local",
+            nombre="Test User",
+            auth_provider="google",
+            auth_provider_id="test-google-id",
+        )
+    )
 
     # Tarjeta
-    session.add(TarjetaModel(
-        id=TEST_TARJETA_ID,
-        usuario_id=TEST_USER_ID,
-        banco="Bancolombia",
-        ultimos_4_digitos="1234",
-        tipo="credito",
-        alias="Mi Visa",
-    ))
+    session.add(
+        TarjetaModel(
+            id=TEST_TARJETA_ID,
+            usuario_id=TEST_USER_ID,
+            banco="Bancolombia",
+            ultimos_4_digitos="1234",
+            tipo="credito",
+            alias="Mi Visa",
+        )
+    )
 
     # Extracto actual (Junio 2026)
-    session.add(ExtractoModel(
-        id=TEST_EXTRACTO_ID,
-        tarjeta_id=TEST_TARJETA_ID,
-        usuario_id=TEST_USER_ID,
-        estado="COMPLETED",
-        periodo_inicio=date(2026, 6, 1),
-        periodo_fin=date(2026, 6, 30),
-        fecha_corte=date(2026, 6, 15),
-        fecha_limite_pago=date(2026, 7, 5),
-        pago_total=Decimal("3200.00"),
-        cupo_total=Decimal("10000.00"),
-        cupo_disponible=Decimal("6800.00"),
-    ))
+    session.add(
+        ExtractoModel(
+            id=TEST_EXTRACTO_ID,
+            tarjeta_id=TEST_TARJETA_ID,
+            usuario_id=TEST_USER_ID,
+            estado="COMPLETED",
+            periodo_inicio=date(2026, 6, 1),
+            periodo_fin=date(2026, 6, 30),
+            fecha_corte=date(2026, 6, 15),
+            fecha_limite_pago=date(2026, 7, 5),
+            pago_total=Decimal("3200.00"),
+            cupo_total=Decimal("10000.00"),
+            cupo_disponible=Decimal("6800.00"),
+        )
+    )
 
     # Extracto anterior (Mayo 2026) — para test de variacion
-    session.add(ExtractoModel(
-        id=TEST_EXTRACTO_PREV_ID,
-        tarjeta_id=TEST_TARJETA_ID,
-        usuario_id=TEST_USER_ID,
-        estado="COMPLETED",
-        periodo_inicio=date(2026, 5, 1),
-        periodo_fin=date(2026, 5, 31),
-        fecha_corte=date(2026, 5, 15),
-        fecha_limite_pago=date(2026, 6, 5),
-        pago_total=Decimal("2800.00"),
-        cupo_total=Decimal("10000.00"),
-        cupo_disponible=Decimal("7200.00"),
-    ))
+    session.add(
+        ExtractoModel(
+            id=TEST_EXTRACTO_PREV_ID,
+            tarjeta_id=TEST_TARJETA_ID,
+            usuario_id=TEST_USER_ID,
+            estado="COMPLETED",
+            periodo_inicio=date(2026, 5, 1),
+            periodo_fin=date(2026, 5, 31),
+            fecha_corte=date(2026, 5, 15),
+            fecha_limite_pago=date(2026, 6, 5),
+            pago_total=Decimal("2800.00"),
+            cupo_total=Decimal("10000.00"),
+            cupo_disponible=Decimal("7200.00"),
+        )
+    )
 
     # Categorias
-    session.add(CategoriaModel(
-        id=TEST_CAT_FOOD,
-        nombre="Alimentacion",
-        icono="🍔",
-        color="#FF6B6B",
-        es_predefinida=True,
-        palabras_clave=["restaurante", "comida", "supermercado"],
-    ))
-    session.add(CategoriaModel(
-        id=TEST_CAT_TRANSPORT,
-        nombre="Transporte",
-        icono="🚗",
-        color="#4ECDC4",
-        es_predefinida=True,
-        palabras_clave=["gasolina", "transporte", "uber"],
-    ))
-    session.add(CategoriaModel(
-        id=TEST_CAT_ENTERTAINMENT,
-        nombre="Entretenimiento",
-        icono="🎬",
-        color="#FFE66D",
-        es_predefinida=True,
-        palabras_clave=["netflix", "cine", "spotify"],
-    ))
-    session.add(CategoriaModel(
-        id=TEST_CAT_SHOPPING,
-        nombre="Compras",
-        icono="🛍",
-        color="#6C5CE7",
-        es_predefinida=True,
-        palabras_clave=["ropa", "electronica", "amazon"],
-    ))
+    session.add(
+        CategoriaModel(
+            id=TEST_CAT_FOOD,
+            nombre="Alimentacion",
+            icono="🍔",
+            color="#FF6B6B",
+            es_predefinida=True,
+            palabras_clave=["restaurante", "comida", "supermercado"],
+        )
+    )
+    session.add(
+        CategoriaModel(
+            id=TEST_CAT_TRANSPORT,
+            nombre="Transporte",
+            icono="🚗",
+            color="#4ECDC4",
+            es_predefinida=True,
+            palabras_clave=["gasolina", "transporte", "uber"],
+        )
+    )
+    session.add(
+        CategoriaModel(
+            id=TEST_CAT_ENTERTAINMENT,
+            nombre="Entretenimiento",
+            icono="🎬",
+            color="#FFE66D",
+            es_predefinida=True,
+            palabras_clave=["netflix", "cine", "spotify"],
+        )
+    )
+    session.add(
+        CategoriaModel(
+            id=TEST_CAT_SHOPPING,
+            nombre="Compras",
+            icono="🛍",
+            color="#6C5CE7",
+            es_predefinida=True,
+            palabras_clave=["ropa", "electronica", "amazon"],
+        )
+    )
 
     # Transacciones del extracto ACTUAL (Junio 2026)
     transacciones_junio = [
@@ -386,7 +407,9 @@ async def test_app() -> AsyncGenerator[FastAPI, None]:
         await conn.run_sync(Base.metadata.create_all)
 
     session_factory = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False,
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
 
     # Insertar datos de prueba
@@ -421,7 +444,8 @@ class TestDashboardSummary:
     """Escenarios para GET /summary — KPIs del periodo."""
 
     async def test_Should_ReturnKPIs_When_ValidExtractId(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna los KPIs del dashboard para un extracto existente."""
         # Act ------------------------------------------------------------
@@ -467,7 +491,8 @@ class TestDashboardSummary:
         assert kpis["pct_cupo_utilizado"] == pytest.approx(8.6, abs=0.2)
 
     async def test_Should_ReturnVariacionVsAnterior_When_PreviousExtractExists(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Calcula variacion vs extracto anterior cuando existe."""
         # Act ------------------------------------------------------------
@@ -486,7 +511,8 @@ class TestDashboardSummary:
         assert kpis["variacion_vs_anterior_pct"] > 50
 
     async def test_Should_Return404_When_ExtractNotFound(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna 404 cuando el extracto no existe."""
         # Act ------------------------------------------------------------
@@ -495,10 +521,11 @@ class TestDashboardSummary:
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 404
-        assert "no encontrado" in response.json()["detail"].lower()
+        assert "no encontrad" in response.json()["detail"].lower()
 
     async def test_Should_ReturnValidStructure_When_ExtractHasNoTransactions(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna KPIs en cero cuando el extracto no tiene transacciones."""
         # Arrange --------------------------------------------------------
@@ -524,13 +551,12 @@ class TestDashboardByCategory:
     """Escenarios para GET /by-category — distribucion de gasto."""
 
     async def test_Should_ReturnTopCategories_When_ValidExtract(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna top N categorias ordenadas por monto gastado."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=5"
-        )
+        response = await client.get(f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=5")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -565,13 +591,12 @@ class TestDashboardByCategory:
         assert data["total_gastado"] == pytest.approx(expected_total, abs=0.02)
 
     async def test_Should_RespectTopN_When_LessCategories(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Respeta el parametro top_n limitando el numero de categorias."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=2"
-        )
+        response = await client.get(f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=2")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -579,35 +604,29 @@ class TestDashboardByCategory:
         assert len(data["items"]) <= 2
 
     async def test_Should_IncludeUncategorized_When_TransactionHasNoCategory(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Agrupa transacciones sin categoria bajo 'Sin categoria'."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=10"
-        )
+        response = await client.get(f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=10")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
         data = response.json()
 
         # Encontrar categoria "Sin categoria" en items u otros
-        all_cats = data["items"] + (
-            [data["otros"]] if data["otros"]["total"] > 0 else []
-        )
-        uncategorized_found = any(
-            c.get("categoria") == "Sin categoria" for c in all_cats
-        )
+        all_cats = data["items"] + ([data["otros"]] if data["otros"]["total"] > 0 else [])
+        uncategorized_found = any(c.get("categoria") == "Sin categoria" for c in all_cats)
         assert uncategorized_found is True
 
     async def test_Should_ExcludeAbonos_When_TransactionsHavePayments(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """No incluye abonos/pagos en los gastos por categoria."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=10"
-        )
+        response = await client.get(f"/by-category?extract_id={TEST_EXTRACTO_ID}&top_n=10")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -628,7 +647,8 @@ class TestDashboardDaily:
     """Escenarios para GET /daily — gasto diario del periodo."""
 
     async def test_Should_ReturnDailyBreakdown_When_ValidExtract(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna gasto diario agrupado por dia con categorias."""
         # Act ------------------------------------------------------------
@@ -671,7 +691,8 @@ class TestDashboardDaily:
         assert data["promedio_diario"] > 0
 
     async def test_Should_ExcludeAbonos_When_DailyBreakdown(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """No incluye pagos/abonos en el desglose diario."""
         # Act ------------------------------------------------------------
@@ -696,7 +717,8 @@ class TestDashboardDaily:
         assert total_diario == pytest.approx(859.35, abs=0.05)
 
     async def test_Should_HaveMultipleCategoriesPerDay_When_SameDay(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Un dia con multiples transacciones debe mostrar todas las categorias."""
         # Act ------------------------------------------------------------
@@ -725,7 +747,8 @@ class TestDashboardMonthlyTrend:
     """Escenarios para GET /monthly-trend — tendencia mensual."""
 
     async def test_Should_ReturnMonthlyTrend_When_UserHasExtracts(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna serie temporal mensual con gastos, ingresos y saldo neto."""
         # Act ------------------------------------------------------------
@@ -757,7 +780,8 @@ class TestDashboardMonthlyTrend:
         assert meses == sorted(meses)
 
     async def test_Should_RespectMesesLimit_When_ManyExtracts(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Respeta el parametro meses limitando el numero de resultados."""
         # Act ------------------------------------------------------------
@@ -770,13 +794,12 @@ class TestDashboardMonthlyTrend:
         assert data["total_meses"] <= 2
 
     async def test_Should_FilterByTarjeta_When_TarjetaIdProvided(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Filtra tendencia por tarjeta especifica."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/monthly-trend?meses=12&tarjeta_id={TEST_TARJETA_ID}"
-        )
+        response = await client.get(f"/monthly-trend?meses=12&tarjeta_id={TEST_TARJETA_ID}")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -785,7 +808,8 @@ class TestDashboardMonthlyTrend:
         assert len(data["items"]) >= 1
 
     async def test_Should_ReturnEmpty_When_NoExtracts(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """Retorna lista vacia para usuario sin extractos."""
         # Este test usa el usuario real del test, que SI tiene extractos.
@@ -806,13 +830,12 @@ class TestDashboardStubs:
     """Verifica que los endpoints stub respondan correctamente."""
 
     async def test_Should_ReturnStub_When_Installments(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """GET /installments retorna respuesta stub."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/installments?tarjeta_id={TEST_TARJETA_ID}"
-        )
+        response = await client.get(f"/installments?tarjeta_id={TEST_TARJETA_ID}")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200
@@ -822,13 +845,12 @@ class TestDashboardStubs:
         assert "proximamente" in data["message"].lower()
 
     async def test_Should_ReturnStub_When_CalendarHeatmap(
-        self, client: AsyncClient,
+        self,
+        client: AsyncClient,
     ) -> None:
         """GET /calendar-heatmap retorna respuesta stub."""
         # Act ------------------------------------------------------------
-        response = await client.get(
-            f"/calendar-heatmap?year=2026&tarjeta_id={TEST_TARJETA_ID}"
-        )
+        response = await client.get(f"/calendar-heatmap?year=2026&tarjeta_id={TEST_TARJETA_ID}")
 
         # Assert ----------------------------------------------------------
         assert response.status_code == 200

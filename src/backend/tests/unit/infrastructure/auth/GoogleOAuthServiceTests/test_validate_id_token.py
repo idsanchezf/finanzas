@@ -85,7 +85,9 @@ class TestValidateIdToken:
         # Arrange --------------------------------------------------------
         svc = self._make_service()
 
-        with patch.object(svc, "_fetch_token_info", AsyncMock(side_effect=Exception("Connection timeout"))):
+        with patch.object(
+            svc, "_fetch_token_info", AsyncMock(side_effect=Exception("Connection timeout"))
+        ):
             # Act ------------------------------------------------------------
             result = await svc.validate_id_token("fake-token")
 

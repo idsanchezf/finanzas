@@ -117,6 +117,7 @@ def handler(
         transaccion_repo=mock_transaccion_repo,
         categoria_repo=MagicMock(),
         presupuesto_repo=MagicMock(),
+        tarjeta_repo=MagicMock(),
         usuario_repo=MagicMock(),
         event_bus=mock_event_bus,
     )
@@ -646,4 +647,6 @@ class TestFileHashDetection:
         if extracto_pasado is not None:
             file_hash = getattr(extracto_pasado, "file_hash", None)
             assert file_hash is not None, "file_hash debe estar asignado antes de save"
-            assert len(file_hash) == 64, f"file_hash debe ser SHA-256 (64 chars), es: {len(file_hash)}"
+            assert len(file_hash) == 64, (
+                f"file_hash debe ser SHA-256 (64 chars), es: {len(file_hash)}"
+            )

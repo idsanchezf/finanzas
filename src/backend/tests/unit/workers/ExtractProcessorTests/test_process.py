@@ -30,6 +30,7 @@ from src.workers.extract_processor_service import (
 # Helpers — Fixtures y fabricas
 # ============================================================
 
+
 @pytest.fixture
 def extracto_id() -> UUID:
     return uuid4()
@@ -148,6 +149,7 @@ def make_mock_session() -> MagicMock:
 # ============================================================
 # ExtractProcessorService.process() — Tests
 # ============================================================
+
 
 class TestProcess:
     """Tests para el metodo process de ExtractProcessorService."""

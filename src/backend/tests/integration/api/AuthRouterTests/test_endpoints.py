@@ -24,6 +24,7 @@ from src.api.routers.auth import router as auth_router
 # ============================================================
 class MockUsuario:
     """Usuario mock para pruebas."""
+
     def __init__(self, **kwargs):
         self.id = kwargs.get("id", uuid.uuid4())
         self.email = kwargs.get("email", "dev@financereport.local")
@@ -33,6 +34,7 @@ class MockUsuario:
 
 class MockRefreshToken:
     """Refresh token mock."""
+
     def __init__(self, **kwargs):
         self.id = kwargs.get("id", uuid.uuid4())
         self.usuario_id = kwargs.get("usuario_id", uuid.uuid4())
@@ -97,14 +99,16 @@ def _mock_usuario_repo(usuario_existente: MockUsuario | None = None):
 def _mock_google_oauth():
     """Google OAuth que siempre valida en dev."""
     svc = MagicMock()
-    svc.validate_id_token = AsyncMock(return_value={
-        "valid": True,
-        "email": "dev@financereport.local",
-        "nombre": "Dev User",
-        "avatar_url": None,
-        "provider": "google",
-        "provider_id": "dev-google-id",
-    })
+    svc.validate_id_token = AsyncMock(
+        return_value={
+            "valid": True,
+            "email": "dev@financereport.local",
+            "nombre": "Dev User",
+            "avatar_url": None,
+            "provider": "google",
+            "provider_id": "dev-google-id",
+        }
+    )
     return svc
 
 
@@ -189,9 +193,7 @@ class TestLoginEndpoint:
 class TestRefreshEndpoint:
     """Escenarios para POST /api/v1/auth/refresh."""
 
-    async def test_Should_ReturnNewAccessToken_When_ValidRefreshToken(
-        self, monkeypatch
-    ) -> None:
+    async def test_Should_ReturnNewAccessToken_When_ValidRefreshToken(self, monkeypatch) -> None:
         """Renueva access token con refresh token valido."""
         # Arrange --------------------------------------------------------
         monkeypatch.setenv("ENVIRONMENT", "development")
@@ -241,9 +243,7 @@ class TestRefreshEndpoint:
         # Assert ----------------------------------------------------------
         assert response.status_code == 400
 
-    async def test_Should_Return401_When_RefreshTokenInvalid(
-        self, monkeypatch
-    ) -> None:
+    async def test_Should_Return401_When_RefreshTokenInvalid(self, monkeypatch) -> None:
         """Retorna 401 cuando el refresh token es invalido."""
         # Arrange --------------------------------------------------------
         monkeypatch.setenv("ENVIRONMENT", "development")
@@ -265,9 +265,7 @@ class TestRefreshEndpoint:
 class TestLogoutEndpoint:
     """Escenarios para POST /api/v1/auth/logout."""
 
-    async def test_Should_ReturnSuccess_When_ValidRefreshToken(
-        self, monkeypatch
-    ) -> None:
+    async def test_Should_ReturnSuccess_When_ValidRefreshToken(self, monkeypatch) -> None:
         """Logout exitoso con refresh token valido."""
         # Arrange --------------------------------------------------------
         monkeypatch.setenv("ENVIRONMENT", "development")

@@ -32,9 +32,7 @@ async def limpiar_extractos(confirmar: bool = False) -> None:
 
     async with AsyncSession(engine) as session:
         # Contar antes de eliminar
-        count_extractos = await session.scalar(
-            select(func.count()).select_from(ExtractoModel)
-        )
+        count_extractos = await session.scalar(select(func.count()).select_from(ExtractoModel))
         count_transacciones = await session.scalar(
             select(func.count()).select_from(TransaccionModel)
         )
