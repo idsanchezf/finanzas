@@ -1,29 +1,92 @@
 # ============================================================
 # Finance Report — Deploy Frontend a Vercel
 # ============================================================
+# Workflow especializado para despliegue del frontend.
+#
+# Invocado por:
+#   - cd.yml (workflow_call) — despliegue automatico staging/production
+#   - Manual (workflow_dispatch) — despliegue manual
+#
+# Requiere:
+#   - GitHub Environment configurado: staging, production
+#   - Proyecto Vercel vinculado
+#   - Secrets del Environment: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# ============================================================
 
 name: Deploy Frontend
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'src/frontend/**'
-      - '.github/workflows/deploy-frontend.yml'
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: "Entorno de despliegue (staging | production)"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Entorno de despliegue"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
 
 jobs:
   deploy:
-    name: Deploy to Vercel
+    name: "Deploy Frontend — ${{ inputs.environment }}"
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'production' && 'https://financereport.app' || 'https://staging.financereport.app' }}
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: "Desplegando frontend [${{ inputs.environment }}]"
+        run: |
+          echo "=============================================="
+          echo "  Entorno:      ${{ inputs.environment }}"
+          echo "  Produccion:   ${{ inputs.environment == 'production' }}"
+          echo "=============================================="
+
       - name: Deploy to Vercel
+        id: vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+          vercel-args: ${{ inputs.environment == 'production' && '--prod' || '' }}
           working-directory: src/frontend
+        continue-on-error: true
+
+      - name: "Vercel setup instructions"
+        if: steps.vercel.outcome == 'failure'
+        run: |
+          echo "::warning::==================================================================="
+          echo "::warning::Vercel deployment fallo o no esta configurado."
+          echo "::warning::Para configurar el despliegue automatico en Vercel:"
+          echo "::warning::"
+          echo "::warning::  1. Crear proyecto en https://vercel.com/new"
+          echo "::warning::     - Framework: Next.js"
+          echo "::warning::     - Root Directory: src/frontend"
+          echo "::warning::     - Build Command: npm run build"
+          echo "::warning::     - Output Directory: .next"
+          echo "::warning::"
+          echo "::warning::  2. Instalar Vercel CLI: npm i -g vercel"
+          echo "::warning::  3. Vincular proyecto: cd src/frontend && vercel link"
+          echo "::warning::     Esto genera .vercel/project.json con orgId y projectId"
+          echo "::warning::"
+          echo "::warning::  4. Generar token: https://vercel.com/account/tokens"
+          echo "::warning::"
+          echo "::warning::  5. Configurar secrets en GitHub Environment (staging + production):"
+          echo "::warning::     Settings > Environments > {environment} > Secrets"
+          echo "::warning::     - VERCEL_TOKEN:     token generado en paso 4"
+          echo "::warning::     - VERCEL_ORG_ID:    teamId de .vercel/project.json"
+          echo "::warning::     - VERCEL_PROJECT_ID: projectId de .vercel/project.json"
+          echo "::warning::"
+          echo "::warning::  ALTERNATIVA: Usa Vercel GitHub Integration en vez de este action."
+          echo "::warning::  Conecta el repo en Vercel y configura automaticamente preview"
+          echo "::warning::  deployments por rama sin necesidad de secrets manuales."
+          echo "::warning::==================================================================="
