@@ -29,13 +29,21 @@ El proyecto mantiene dos archivos clave:
 
 1. **Leer `.harness-state.json`** via el subagente `features` con la instruccion `resume`
 2. **Leer `docs/architecture.md`** para conocer el stack tecnologico activo
-3. Reportar al usuario el estado actual: fase en progreso, feature activa, fases completadas, stack tecnologico
-4. **Si `architecture.md` no tiene stack definido y `design` esta pendiente**, notificar que la tecnologia aun no se ha seleccionado
-5. Preguntar al usuario si desea activar Human in the Loop (`features hitl enable`) o desactivarlo (`features hitl disable`). Por defecto, HITL inicia **desactivado**.
-6. **Si hay TDD en progreso**: reportar paso exacto (RED/GREEN/REFACTOR), archivo de test, escenario actual y pendientes
-7. Si el archivo no existe, invocar `features init` para crearlo y luego `analysis` como primera fase
-8. Si el archivo existe y hay una fase `in_progress`, retomas desde esa fase con el subagente correspondiente
-9. **Si hay TDD interrumpido**: invocar `develop` indicando que retome desde el paso y escenario guardados en `tdd`
+3. **Verificar integridad del flujo Git Flow:**
+   - Ejecutar `git fetch origin`
+   - Ejecutar `git log origin/develop..origin/main --oneline`
+   - Si hay commits en `main` que no estan en `develop`:
+     - ⚠️ **ADVERTENCIA ACTIVA**: Reportar divergencia al usuario
+     - "develop esta desincronizado de main. Las siguientes features llegaron a main sin pasar por develop: [lista de commits]. El flujo GitFlow esta roto. No se pueden crear nuevas features hasta resolver la divergencia. Contacta al administrador del repositorio."
+     - **No bloquear features que ya estan `in_progress`**, pero advertir que el CI no se ejecutara correctamente
+   - Si `develop` esta sincronizado: continuar normalmente
+4. Reportar al usuario el estado actual: fase en progreso, feature activa, fases completadas, stack tecnologico
+5. **Si `architecture.md` no tiene stack definido y `design` esta pendiente**, notificar que la tecnologia aun no se ha seleccionado
+6. Preguntar al usuario si desea activar Human in the Loop (`features hitl enable`) o desactivarlo (`features hitl disable`). Por defecto, HITL inicia **desactivado**.
+7. **Si hay TDD en progreso**: reportar paso exacto (RED/GREEN/REFACTOR), archivo de test, escenario actual y pendientes
+8. Si el archivo no existe, invocar `features init` para crearlo y luego `analysis` como primera fase
+9. Si el archivo existe y hay una fase `in_progress`, retomas desde esa fase con el subagente correspondiente
+10. **Si hay TDD interrumpido**: invocar `develop` indicando que retome desde el paso y escenario guardados en `tdd`
 
 ### Al completar una fase
 
@@ -109,12 +117,15 @@ Las skills se activan automaticamente segun el contexto. Algunas son **genericas
 ## Reglas
 
 - Siempre inicia verificando `.harness-state.json` y `docs/architecture.md` al abrir sesion
+- **Verificar integridad Git Flow al iniciar**: `git log origin/develop..origin/main`. Si hay divergencia, advertir al usuario.
 - Solo `features` modifica `.harness-state.json`
 - Solo `architect` y `design` modifican `docs/architecture.md`
 - Cumplir la regla de una-feature-a-la-vez siempre
 - **Human in the Loop (HITL):** si `humanInTheLoop: true`, NUNCA avances a la siguiente fase sin aprobacion explicita del usuario. Pregunta y espera confirmacion
 - Cada feature nueva inicia creando su rama `feature/{id}-{slug}` desde `develop`
 - Usar estrategia Git Flow para branching (consultar skill `git-flow`)
+- **NUNCA hacer push directo a `main` ni `develop`.** Solo PRs.
+- **NUNCA mergear `main` → `develop`.** El flujo Git Flow es unidireccional: feature/* → develop → main.
 - Aplicar TDD en implementacion (consultar skill `tdd`) y BDD en aceptacion (consultar skill `bdd`)
 - La tecnologia se define UNA vez en `design` y se persiste en `docs/architecture.md`
 - Cada subagente debe recibir el stack tecnologico como parte de su contexto
