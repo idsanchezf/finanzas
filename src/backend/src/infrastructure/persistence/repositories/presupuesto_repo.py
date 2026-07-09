@@ -39,7 +39,7 @@ class PresupuestoRepository(IPresupuestoRepository):
 
     async def save(self, presupuesto: Any) -> Any:
         """Guarda o actualiza un presupuesto.
-        
+
         Soporta tanto entidades de dominio (dataclass) como modelos ORM.
         """
         if hasattr(presupuesto, "_sa_instance_state"):
