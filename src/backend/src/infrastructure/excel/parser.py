@@ -67,7 +67,9 @@ class ExtractoExcelParser:
     )
     PATRON_HEADER_AUTORIZACION = re.compile(r"n[uú]mero\s+(de\s+)?autorizaci[oó]n", re.IGNORECASE)
     PATRON_FECHA_DDMMYYYY = re.compile(r"^\d{1,2}/\d{1,2}/\d{4}$")
-    PATRON_TARJETA_ENMASCARADA = re.compile(r"\*{4,}(\d{4})")  # Extrae los ultimos 4 digitos del numero enmascarado (****7681)
+    PATRON_TARJETA_ENMASCARADA = re.compile(
+        r"\*{4,}(\d{4})"
+    )  # Extrae los ultimos 4 digitos del numero enmascarado (****7681)
 
     # ------------------------------------------------------------------
     # Firmas estructurales de Bancolombia
@@ -253,9 +255,7 @@ class ExtractoExcelParser:
                         match = self.PATRON_TARJETA_ENMASCARADA.search(str(v))
                         if match:
                             resultado.metadatos["ultimos_4_digitos"] = match.group(1)
-                            logger.info(
-                                "Ultimos 4 digitos extraidos: ****%s", match.group(1)
-                            )
+                            logger.info("Ultimos 4 digitos extraidos: ****%s", match.group(1))
                             break
 
             # Moneda

@@ -404,9 +404,7 @@ class CommandHandler:
         """
         transaccion = await self.transaccion_repo.get_by_id(cmd.transaccion_id)
         if not transaccion:
-            raise EntidadNoEncontradaError(
-                entidad="Transaccion", entidad_id=cmd.transaccion_id
-            )
+            raise EntidadNoEncontradaError(entidad="Transaccion", entidad_id=cmd.transaccion_id)
 
         # Obtener todas las categorias del usuario para el motor de reglas
         categorias = await self.categoria_repo.get_all(cmd.usuario_id)
@@ -416,9 +414,7 @@ class CommandHandler:
 
         clasificador = ClasificadorReglas()
         comercio = transaccion.comercio_original or ""
-        categoria_id, confidence = clasificador.clasificar_por_reglas(
-            comercio, categorias
-        )
+        categoria_id, confidence = clasificador.clasificar_por_reglas(comercio, categorias)
 
         # Si se encontro una clasificacion, persistir el resultado
         if categoria_id is not None:
@@ -436,12 +432,8 @@ class CommandHandler:
 
         return {
             "transaccion_id": str(transaccion.id),
-            "categoria_id": str(transaccion.categoria_id)
-            if transaccion.categoria_id
-            else None,
-            "confidence": float(transaccion.confidence)
-            if transaccion.confidence
-            else None,
+            "categoria_id": str(transaccion.categoria_id) if transaccion.categoria_id else None,
+            "confidence": float(transaccion.confidence) if transaccion.confidence else None,
             "clasificado": categoria_id is not None,
         }
 
@@ -499,9 +491,7 @@ class CommandHandler:
         # Obtener entidad de dominio (con metodos de negocio)
         transaccion = await self.transaccion_repo.get_entity_by_id(cmd.transaccion_id)
         if not transaccion:
-            raise EntidadNoEncontradaError(
-                entidad="Transaccion", entidad_id=cmd.transaccion_id
-            )
+            raise EntidadNoEncontradaError(entidad="Transaccion", entidad_id=cmd.transaccion_id)
 
         # Ejecutar logica de dominio: actualiza categoria + confidence + genera evento
         events = transaccion.corregir_categoria(cmd.categoria_id)

@@ -60,9 +60,7 @@ class QueryHandler:
         """
         extracto = await self.extracto_repo.get_by_id(query.extracto_id)
         if not extracto:
-            raise EntidadNoEncontradaError(
-                entidad="Extracto", entidad_id=query.extracto_id
-            )
+            raise EntidadNoEncontradaError(entidad="Extracto", entidad_id=query.extracto_id)
 
         transacciones = await self.transaccion_repo.get_by_extracto(query.extracto_id)
 
